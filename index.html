@@ -86,6 +86,7 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
     <div style="display:flex;gap:8px;align-items:center;">
       <div id="sync-status"><span class="dot ok" id="sync-dot"></span><span id="sync-text">Synced</span></div>
       <button id="btn-team" onclick="openMembers()">👥 Team</button>
+      <button onclick="openProjects()" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">📁 Projects</button>
       <button id="btn-new" onclick="openNew()">+ New Task</button>
     </div>
   </div>
@@ -151,6 +152,22 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" onclick="submitTask()" style="flex:1;">Save Task</button>
       <button class="btn-secondary" onclick="closeModal('modal-task')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Projects Modal -->
+<div class="overlay" id="modal-projects" onclick="if(event.target===this)closeModal('modal-projects')">
+  <div class="modal">
+    <h2>📁 Projects</h2>
+    <div id="projects-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <input id="new-project-input" placeholder="New project name…" style="flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;font-size:13px;" onkeydown="if(event.key==='Enter')addProjectInline()"/>
+      <button class="btn-primary" onclick="addProjectInline()" style="padding:8px 16px;">Add</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="saveProjects()" style="flex:1;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;">Save Changes</button>
+      <button class="btn-secondary" onclick="closeModal('modal-projects')">Cancel</button>
     </div>
   </div>
 </div>
@@ -503,6 +520,44 @@ async function submitTask(){
   projects=Object.keys(ps);
   closeModal('modal-task'); render();
   await upsertTask(taskData);
+}
+
+// ── PROJECTS ──────────────────────────────────────────────────────────────────
+let pendingProjects=[];
+function openProjects(){
+  pendingProjects=[...projects];
+  renderProjectsList(); openModal('modal-projects');
+}
+function renderProjectsList(){
+  document.getElementById('projects-list').innerHTML=pendingProjects.map((p,i)=>{
+    const hasTask=tasks.some(t=>t.project===p);
+    return `<div style="display:flex;align-items:center;gap:10px;background:#F9FAFB;border-radius:10px;padding:10px 14px;">
+      <div style="width:12px;height:12px;border-radius:3px;background:${PROJ_COLORS[i%PROJ_COLORS.length]};flex-shrink:0;"></div>
+      <span style="flex:1;font-size:14px;font-weight:600;color:#111827;">${p}</span>
+      ${hasTask?`<span style="font-size:11px;color:#9CA3AF;background:#E5E7EB;border-radius:20px;padding:2px 8px;">${tasks.filter(t=>t.project===p).length} tasks</span>`:''}
+      ${pendingProjects.length>1?`<button onclick="removeProject(${i})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:600;" ${hasTask?'title="Warning: has tasks"':''}>
+        ${hasTask?'⚠️ ':''}Remove</button>`:''}
+    </div>`;
+  }).join('');
+}
+function addProjectInline(){
+  const n=document.getElementById('new-project-input').value.trim();
+  if(!n||pendingProjects.includes(n)) return;
+  pendingProjects.push(n);
+  document.getElementById('new-project-input').value='';
+  renderProjectsList();
+}
+function removeProject(i){
+  const p=pendingProjects[i];
+  const hasTask=tasks.some(t=>t.project===p);
+  if(hasTask && !confirm(`"${p}" มี tasks อยู่ ถ้าลบ Project tasks เหล่านั้นจะยังอยู่แต่ไม่มี Project\nต้องการลบต่อไหม?`)) return;
+  pendingProjects.splice(i,1);
+  renderProjectsList();
+}
+function saveProjects(){
+  projects=[...pendingProjects];
+  closeModal('modal-projects');
+  render();
 }
 
 // ── MEMBERS ───────────────────────────────────────────────────────────────────
