@@ -15,7 +15,6 @@ input,select,textarea{font-family:inherit;}
 .view-btn{border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;background:#F3F4F6;color:#374151;}
 .view-btn.active{background:#6366F1;color:#fff;}
 #btn-new{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;border-radius:10px;padding:8px 18px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(99,102,241,.4);}
-#btn-team{background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;}
 #sync-status{font-size:11px;color:#9CA3AF;display:flex;align-items:center;gap:4px;}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:#9CA3AF;}
 .dot.ok{background:#4ADE80;}.dot.syncing{background:#FB923C;animation:pulse 1s infinite;}
@@ -70,12 +69,31 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
 </head>
 <body>
 
+<!-- Loading -->
 <div id="loading">
   <div class="spinner"></div>
   <div style="font-size:15px;font-weight:700;color:#6366F1;">Loading TeamFlow…</div>
-  <div id="load-msg" style="font-size:13px;color:#9CA3AF;">Connecting to Supabase…</div>
+  <div id="load-msg" style="font-size:13px;color:#9CA3AF;"></div>
 </div>
 
+<!-- Login Screen -->
+<div id="screen-login" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#EEF2FF,#FDF4FF,#FFF7ED);z-index:500;align-items:center;justify-content:center;" class="overlay">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">🎯</div>
+    <h2 style="margin-bottom:8px;">TeamFlow</h2>
+    <p style="font-size:13px;color:#6B7280;margin-bottom:8px;">เข้าสู่ระบบด้วย Garena Google Account</p>
+    <p style="font-size:12px;color:#9CA3AF;margin-bottom:24px;">เฉพาะสมาชิกทีมที่ได้รับสิทธิ์เท่านั้น</p>
+    <button onclick="loginWithGoogle()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;border:2px solid #E5E7EB;border-radius:12px;padding:14px 20px;font-size:15px;font-weight:600;color:#374151;cursor:pointer;transition:all .15s;"
+      onmouseover="this.style.borderColor='#6366F1';this.style.background='#EEF2FF'"
+      onmouseout="this.style.borderColor='#E5E7EB';this.style.background='#fff'">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Login with Google
+    </button>
+    <div id="login-error" style="margin-top:16px;font-size:13px;color:#DC2626;background:#FEF2F2;border-radius:8px;padding:10px;display:none;"></div>
+  </div>
+</div>
+
+<!-- Main App -->
 <div id="app" style="display:none;">
   <div id="header">
     <div id="logo"><span>🎯</span> TeamFlow</div>
@@ -86,7 +104,7 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <div id="sync-status"><span class="dot ok" id="sync-dot"></span><span id="sync-text">Synced</span></div>
       <div id="online-avatars" style="display:flex;align-items:center;gap:4px;"></div>
-      <button id="btn-team" onclick="openMembers()">👥 Team</button>
+      <button onclick="openMembers()" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">👥 Team</button>
       <button onclick="openProjects()" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">📁 Projects</button>
       <button id="btn-new" onclick="openNew()">+ New Task</button>
       <button onclick="logout()" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">🚪 Logout</button>
@@ -107,33 +125,6 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
     </div>
     <div id="kanban"></div>
     <div id="list" style="display:none;"></div>
-  </div>
-</div>
-
-<!-- Login Screen -->
-<div class="overlay open" id="modal-login">
-  <div class="modal" style="max-width:380px;text-align:center;">
-    <div style="font-size:48px;margin-bottom:12px;">🎯</div>
-    <h2 style="margin-bottom:8px;">TeamFlow</h2>
-    <p style="font-size:13px;color:#6B7280;margin-bottom:24px;">Login ด้วย Garena Google Account เพื่อเข้าใช้งาน</p>
-    <button onclick="loginWithGoogle()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;border:2px solid #E5E7EB;border-radius:12px;padding:14px 20px;font-size:15px;font-weight:600;color:#374151;cursor:pointer;transition:all .15s;"
-      onmouseover="this.style.borderColor='#6366F1';this.style.background='#EEF2FF'"
-      onmouseout="this.style.borderColor='#E5E7EB';this.style.background='#fff'">
-      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Login with Google
-    </button>
-    <div id="login-error" style="margin-top:16px;font-size:13px;color:#DC2626;display:none;"></div>
-    <p style="font-size:11px;color:#9CA3AF;margin-top:20px;">เฉพาะ @garena.com เท่านั้น</p>
-  </div>
-</div>
-
-<!-- Who Are You Modal (fallback ถ้า email ไม่ตรง) -->
-<div class="overlay open" id="modal-whoami">
-  <div class="modal" style="max-width:400px;text-align:center;">
-    <div style="font-size:40px;margin-bottom:12px;">👋</div>
-    <h2 style="margin-bottom:8px;">ยินดีต้อนรับสู่ TeamFlow</h2>
-    <p style="font-size:13px;color:#6B7280;margin-bottom:20px;">เลือกหรือพิมพ์ชื่อของคุณก่อนเข้าใช้งาน</p>
-    <div id="whoami-list" style="text-align:left;"></div>
   </div>
 </div>
 
@@ -222,10 +213,28 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
 </div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
+// ── SUPABASE CONFIG ───────────────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://hdruqpgbbnvuawbbztfn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkcnVxcGdiYm52dWF3YmJ6dGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Mjk3OTQsImV4cCI6MjA5MzEwNTc5NH0.4_6mJgWQvbB8N8iTawqFm-LXs5IF_j8OzZstriQ7GFM';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── WHITELIST: email → ชื่อที่แสดง ───────────────────────────────────────────
+const WHITELIST = {
+  'panuwee.w@garena.com':      'Panu',
+  'nithidol.k@garena.com':     'Big',
+  'tanadech.s@garena.com':     'Mark',
+  'sakdarin@garena.com':       'Po',
+  'fco.thanayoot@garena.com':  'Aof',
+  'fco.koravit@garena.com':    'Folk',
+  'weerayut@garena.com':       "P'Mac",
+  'kwanchanok.s@garena.com':   'May',
+  'napol.a@garena.com':        'Pluem',
+  'chayodom.a@garena.com':     'No',
+  'sasin.cha@garena.com':      'Gear',
+  'fco.rittichai@garena.com':  'Boss',
+  'fco.thanatbhum@garena.com': 'Magnate',
+  'fco.punyakon@garena.com':   'Real',
+};
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const STATUSES = ['To Do','In Progress','Review','Done'];
@@ -250,7 +259,37 @@ let pendingMembers=[], pendingProjects=[];
 let fAssignee='All Assignees', fPriority='All Priorities', fProject='All Projects';
 let currentUser=null, presenceChannel=null, onlineUsers={};
 
-// ── SUPABASE API ──────────────────────────────────────────────────────────────
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+async function loginWithGoogle() {
+  const {error} = await db.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: 'https://panuwee.github.io/teamflow/',
+      queryParams: {hd: 'garena.com'}
+    }
+  });
+  if(error) showLoginError(error.message);
+}
+
+async function logout() {
+  if(!confirm('ต้องการ Logout ไหมครับ?')) return;
+  if(presenceChannel) presenceChannel.unsubscribe();
+  await db.auth.signOut();
+  location.reload();
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = '❌ ' + msg;
+  el.style.display = '';
+}
+
+function showLoginScreen() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('screen-login').classList.add('open');
+}
+
+// ── SUPABASE DATA API ─────────────────────────────────────────────────────────
 async function loadAll() {
   setSyncing(true);
   try {
@@ -263,18 +302,18 @@ async function loadAll() {
     members = (md||[]).map(m=>m.name);
     const ps={};
     tasks.forEach(t=>{if(t.project) ps[t.project]=1;});
-    projects=Object.keys(ps);
-    if(!projects.length) projects=['Operation','Design'];
+    projects = Object.keys(ps);
+    if(!projects.length) projects = ['Operation','Design'];
     setSyncing(false,'Synced');
   } catch(e) { setSyncing(false,'Error'); console.error(e); throw e; }
 }
 
 async function upsertTask(t) {
   setSyncing(true,'Saving…');
-  const {error}=await db.from('tasks').upsert({
-    id:t.id,title:t.title,project:t.project,status:t.status,
-    priority:t.priority,assignee:t.assignee,due:t.due||null,
-    description:t.description,comments:t.comments||[],
+  const {error} = await db.from('tasks').upsert({
+    id:t.id, title:t.title, project:t.project, status:t.status,
+    priority:t.priority, assignee:t.assignee, due:t.due||null,
+    description:t.description, comments:t.comments||[],
     created_by:t.created_by||null,
     updated_at:new Date().toISOString()
   });
@@ -284,10 +323,8 @@ async function upsertTask(t) {
 }
 
 async function deleteTaskDB(id) {
-  const {error}=await db.from('tasks').delete().eq('id',id);
-  if(error) console.error(error);
+  await db.from('tasks').delete().eq('id',id);
 }
-
 async function upsertMember(name) {
   await db.from('members').upsert({name},{onConflict:'name'});
 }
@@ -295,106 +332,12 @@ async function deleteMemberDB(name) {
   await db.from('members').delete().eq('name',name);
 }
 
-// Auto-refresh every 30s
 setInterval(async()=>{
-  if(document.hidden) return;
+  if(document.hidden||!currentUser) return;
   await loadAll(); render();
 },30000);
 
-// ── GOOGLE AUTH ───────────────────────────────────────────────────────────────
-async function loginWithGoogle() {
-  const { error } = await db.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: 'https://panuwee.github.io/teamflow/',
-      queryParams: { hd: 'garena.com' } // จำกัดเฉพาะ @garena.com
-    }
-  });
-  if(error) {
-    document.getElementById('login-error').style.display='';
-    document.getElementById('login-error').textContent='❌ '+error.message;
-  }
-}
-
-async function logout() {
-  if(!confirm('ต้องการ Logout ไหมครับ?')) return;
-  localStorage.removeItem('teamflow_user');
-  if(presenceChannel) presenceChannel.unsubscribe();
-  await db.auth.signOut();
-  location.reload();
-}
-
-async function checkAuth() {
-  const { data: { session } } = await db.auth.getSession();
-  if(!session) return null;
-
-  const email = session.user.email;
-  // เช็ค domain @garena.com
-  if(!email.endsWith('@garena.com')) {
-    await db.auth.signOut();
-    document.getElementById('login-error').style.display='';
-    document.getElementById('login-error').textContent='❌ เฉพาะ @garena.com เท่านั้น';
-    return null;
-  }
-
-  // ดึงชื่อจาก email เช่น big@garena.com → Big
-  const nameFromEmail = email.split('@')[0];
-  const displayName = session.user.user_metadata?.full_name ||
-    nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
-
-  return displayName;
-}
-
-function switchUser() {
-  localStorage.removeItem('teamflow_user');
-  if(presenceChannel) presenceChannel.unsubscribe();
-  onlineUsers = {};
-  currentUser = null;
-  showWhoAmI();
-}
-
 // ── PRESENCE ──────────────────────────────────────────────────────────────────
-function showWhoAmI() {
-  const wrap = document.getElementById('whoami-list');
-  wrap.innerHTML = `
-    <p style="font-size:12px;color:#9CA3AF;margin-bottom:8px;">เลือกชื่อจากทีม:</p>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      ${members.map(m=>`
-        <button onclick="selectUser('${m}')" style="display:flex;align-items:center;gap:12px;background:#F9FAFB;border:2px solid #E5E7EB;border-radius:12px;padding:12px 16px;cursor:pointer;width:100%;transition:all .15s;"
-          onmouseover="this.style.borderColor='#6366F1';this.style.background='#EEF2FF'"
-          onmouseout="this.style.borderColor='#E5E7EB';this.style.background='#F9FAFB'">
-          ${avatarHTML(m,36)}<span style="font-size:15px;font-weight:600;color:#111827;">${m}</span>
-        </button>`).join('')}
-    </div>
-    <div style="border-top:1px solid #E5E7EB;margin:16px 0;"></div>
-    <p style="font-size:12px;color:#9CA3AF;margin-bottom:8px;">หรือพิมพ์ชื่อใหม่:</p>
-    <div style="display:flex;gap:8px;">
-      <input id="custom-name-input" placeholder="ชื่อของคุณ…"
-        style="flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;font-size:13px;"
-        onkeydown="if(event.key==='Enter')selectCustomUser()"/>
-      <button onclick="selectCustomUser()" class="btn-primary" style="padding:8px 16px;font-size:13px;">เข้าใช้</button>
-    </div>`;
-  openModal('modal-whoami');
-}
-
-async function selectCustomUser() {
-  const input = document.getElementById('custom-name-input');
-  const name  = input.value.trim();
-  if(!name){ input.focus(); return; }
-  if(!members.includes(name)){
-    await upsertMember(name);
-    members.push(name);
-    renderFilters();
-  }
-  selectUser(name);
-}
-
-function selectUser(name) {
-  currentUser = name;
-  closeModal('modal-whoami');
-  initPresence();
-}
-
 function initPresence() {
   if(presenceChannel) presenceChannel.unsubscribe();
   presenceChannel = db.channel('online-users',{config:{presence:{key:currentUser}}});
@@ -421,7 +364,7 @@ function renderOnlineAvatars() {
       <div title="${u}" style="margin-left:${i>0?'-8px':'0'};z-index:${10-i};position:relative;">
         ${avatarHTML(u,28)}</div>`).join('')}
     </div>
-    <span style="font-size:11px;color:#6366F1;font-weight:600;">คุณ: ${currentUser}</span>`;
+    <span style="font-size:11px;color:#6366F1;font-weight:600;background:#EEF2FF;padding:3px 8px;border-radius:20px;">${currentUser}</span>`;
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -595,7 +538,6 @@ function renderDetailContent(t){
     ?`<div style="display:flex;align-items:center;gap:6px;">${avatarHTML(t.created_by,24)}<span style="font-size:13px;color:#374151;">${t.created_by}</span></div>`
     :`<span style="font-size:13px;color:#9CA3AF;">—</span>`;
   document.getElementById('detail-project').textContent=t.project||'—';
-  document.getElementById('detail-desc').textContent=t.description||'No description.';
   document.getElementById('comment-header').textContent=`💬 Comments (${(t.comments||[]).length})`;
   document.getElementById('detail-actions').innerHTML=`
     <button class="btn-secondary" style="font-size:13px;padding:7px 18px;" onclick="openEdit('${t.id}')">✏️ Edit</button>
@@ -624,7 +566,7 @@ async function postComment(){
   const inp=document.getElementById('comment-input');
   const txt=inp.value.trim();if(!txt) return;
   const t=tasks.find(x=>x.id==selectedId);if(!t) return;
-  t.comments=[...(t.comments||[]),{author:currentUser||'You',text:txt,time:new Date().toISOString().slice(0,10)}];
+  t.comments=[...(t.comments||[]),{author:currentUser,text:txt,time:new Date().toISOString().slice(0,10)}];
   inp.value='';renderDetailContent(t);
   await upsertTask(t);
 }
@@ -659,7 +601,7 @@ async function submitTask(){
   const title=document.getElementById('tf-title').value.trim();
   if(!title){alert('Please enter a task title.');return;}
   const taskData={
-    id:editingId||Date.now().toString(),title,
+    id:editingId||Date.now().toString(), title,
     project:document.getElementById('tf-project').value,
     status:document.getElementById('tf-status').value,
     priority:document.getElementById('tf-priority').value,
@@ -729,7 +671,7 @@ function addProjectInline(){
 function removeProject(i){
   const p=pendingProjects[i];
   const cnt=tasks.filter(t=>t.project===p).length;
-  if(cnt&&!confirm(`"${p}" มี ${cnt} tasks อยู่ ถ้าลบ tasks เหล่านั้นจะยังอยู่แต่ไม่มี Project\nต้องการลบต่อไหม?`)) return;
+  if(cnt&&!confirm(`"${p}" มี ${cnt} tasks อยู่ ถ้าลบ tasks เหล่านั้นจะยังอยู่\nต้องการลบต่อไหม?`)) return;
   pendingProjects.splice(i,1);renderProjectsList();
 }
 function saveProjects(){
@@ -738,14 +680,47 @@ function saveProjects(){
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 (async()=>{
+  document.getElementById('load-msg').textContent='Checking session…';
   try{
+    // ดึง session ปัจจุบัน
+    const {data:{session}} = await db.auth.getSession();
+
+    if(!session){
+      // ไม่ได้ login → แสดงหน้า Login
+      showLoginScreen();
+      return;
+    }
+
+    const email = session.user.email.toLowerCase();
+
+    // เช็ค whitelist
+    if(!WHITELIST[email]){
+      await db.auth.signOut();
+      showLoginScreen();
+      showLoginError(`"${email}" ไม่มีสิทธิ์เข้าใช้งาน กรุณาติดต่อ Admin`);
+      return;
+    }
+
+    // ได้รับอนุญาต → ดึงชื่อจาก whitelist
+    currentUser = WHITELIST[email];
+
+    // โหลดข้อมูล
+    document.getElementById('load-msg').textContent='Loading tasks…';
     await loadAll();
+
+    // เพิ่มเข้า Members อัตโนมัติถ้ายังไม่มี
+    if(!members.includes(currentUser)){
+      await upsertMember(currentUser);
+      members.push(currentUser);
+    }
+
     render();setView('kanban');
     document.getElementById('loading').style.display='none';
     document.getElementById('app').style.display='';
-    showWhoAmI();
+    initPresence();
+
   }catch(e){
-    document.getElementById('load-msg').textContent='❌ Failed: '+e.message;
+    document.getElementById('load-msg').textContent='❌ Error: '+e.message;
     console.error(e);
   }
 })();
