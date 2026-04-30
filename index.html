@@ -83,8 +83,10 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
       <button class="view-btn active" id="btn-kanban" onclick="setView('kanban')">⊞ Kanban</button>
       <button class="view-btn" id="btn-list" onclick="setView('list')">☰ List</button>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <div id="sync-status"><span class="dot ok" id="sync-dot"></span><span id="sync-text">Synced</span></div>
+      <div id="online-avatars" style="display:flex;align-items:center;gap:4px;"></div>
+      <button onclick="switchUser()" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">🔄 เปลี่ยนชื่อ</button>
       <button id="btn-team" onclick="openMembers()">👥 Team</button>
       <button onclick="openProjects()" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">📁 Projects</button>
       <button id="btn-new" onclick="openNew()">+ New Task</button>
@@ -108,6 +110,16 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
   </div>
 </div>
 
+<!-- Who Are You Modal -->
+<div class="overlay open" id="modal-whoami">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">👋</div>
+    <h2 style="margin-bottom:8px;">ยินดีต้อนรับสู่ TeamFlow</h2>
+    <p style="font-size:13px;color:#6B7280;margin-bottom:20px;">เลือกหรือพิมพ์ชื่อของคุณก่อนเข้าใช้งาน</p>
+    <div id="whoami-list" style="text-align:left;"></div>
+  </div>
+</div>
+
 <!-- Detail Modal -->
 <div class="overlay" id="modal-detail" onclick="if(event.target===this)closeModal('modal-detail')">
   <div class="modal">
@@ -119,6 +131,10 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
       <div><div style="font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Assignee</div><div id="detail-assignee"></div></div>
       <div><div style="font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Due Date</div><div id="detail-due" style="font-size:13px;color:#374151;"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div><div style="font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;margin-bottom:4px;">📌 PIC (ผู้สร้าง)</div><div id="detail-pic"></div></div>
+      <div><div style="font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Project</div><div id="detail-project" style="font-size:13px;color:#374151;"></div></div>
     </div>
     <div style="margin-bottom:16px;">
       <div style="font-size:11px;color:#9CA3AF;font-weight:600;text-transform:uppercase;margin-bottom:4px;">Description</div>
@@ -156,22 +172,6 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
   </div>
 </div>
 
-<!-- Projects Modal -->
-<div class="overlay" id="modal-projects" onclick="if(event.target===this)closeModal('modal-projects')">
-  <div class="modal">
-    <h2>📁 Projects</h2>
-    <div id="projects-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
-    <div style="display:flex;gap:8px;margin-bottom:20px;">
-      <input id="new-project-input" placeholder="New project name…" style="flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;font-size:13px;" onkeydown="if(event.key==='Enter')addProjectInline()"/>
-      <button class="btn-primary" onclick="addProjectInline()" style="padding:8px 16px;">Add</button>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button onclick="saveProjects()" style="flex:1;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;">Save Changes</button>
-      <button class="btn-secondary" onclick="closeModal('modal-projects')">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <!-- Members Modal -->
 <div class="overlay" id="modal-members" onclick="if(event.target===this)closeModal('modal-members')">
   <div class="modal">
@@ -188,8 +188,24 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
   </div>
 </div>
 
+<!-- Projects Modal -->
+<div class="overlay" id="modal-projects" onclick="if(event.target===this)closeModal('modal-projects')">
+  <div class="modal">
+    <h2>📁 Projects</h2>
+    <div id="projects-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <input id="new-project-input" placeholder="New project name…" style="flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;font-size:13px;" onkeydown="if(event.key==='Enter')addProjectInline()"/>
+      <button class="btn-primary" onclick="addProjectInline()" style="padding:8px 16px;">Add</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="saveProjects()" style="flex:1;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;">Save Changes</button>
+      <button class="btn-secondary" onclick="closeModal('modal-projects')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ── SUPABASE CONFIG ───────────────────────────────────────────────────────────
+// ── CONFIG ────────────────────────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://hdruqpgbbnvuawbbztfn.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkcnVxcGdiYm52dWF3YmJ6dGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Mjk3OTQsImV4cCI6MjA5MzEwNTc5NH0.4_6mJgWQvbB8N8iTawqFm-LXs5IF_j8OzZstriQ7GFM';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -207,15 +223,17 @@ const PRIORITY_COLORS = {
   Medium:{bg:'#FEF9C3',text:'#CA8A04'},
   Low:   {bg:'#DCFCE7',text:'#16A34A'},
 };
-const AVATAR_COLORS=['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#14B8A6'];
-const PROJ_COLORS  =['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#8B5CF6','#14B8A6','#EF4444'];
+const AVATAR_COLORS = ['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#14B8A6'];
+const PROJ_COLORS   = ['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#8B5CF6','#14B8A6','#EF4444'];
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let tasks=[], members=[], projects=[], view='kanban';
-let editingId=null, selectedId=null, draggingId=null, pendingMembers=[];
+let editingId=null, selectedId=null, draggingId=null;
+let pendingMembers=[], pendingProjects=[];
 let fAssignee='All Assignees', fPriority='All Priorities', fProject='All Projects';
+let currentUser=null, presenceChannel=null, onlineUsers={};
 
-// ── API ───────────────────────────────────────────────────────────────────────
+// ── SUPABASE API ──────────────────────────────────────────────────────────────
 async function loadAll() {
   setSyncing(true);
   try {
@@ -223,41 +241,34 @@ async function loadAll() {
       db.from('tasks').select('*').order('updated_at',{ascending:true}),
       db.from('members').select('*').order('id',{ascending:true}),
     ]);
-    if(te) throw te;
-    if(me) throw me;
-    tasks   = (td||[]).map(t=>({...t, comments: t.comments||[]}));
+    if(te) throw te; if(me) throw me;
+    tasks   = (td||[]).map(t=>({...t,comments:t.comments||[]}));
     members = (md||[]).map(m=>m.name);
     const ps={};
-    tasks.forEach(t=>{ if(t.project) ps[t.project]=1; });
+    tasks.forEach(t=>{if(t.project) ps[t.project]=1;});
     projects=Object.keys(ps);
     if(!projects.length) projects=['Operation','Design'];
     setSyncing(false,'Synced');
-  } catch(e) {
-    setSyncing(false,'Error');
-    console.error(e);
-    throw e;
-  }
+  } catch(e) { setSyncing(false,'Error'); console.error(e); throw e; }
 }
 
 async function upsertTask(t) {
   setSyncing(true,'Saving…');
-  const {error} = await db.from('tasks').upsert({
-    id:t.id, title:t.title, project:t.project, status:t.status,
-    priority:t.priority, assignee:t.assignee, due:t.due||null,
-    description:t.description, comments:t.comments||[],
-    updated_at: new Date().toISOString()
+  const {error}=await db.from('tasks').upsert({
+    id:t.id,title:t.title,project:t.project,status:t.status,
+    priority:t.priority,assignee:t.assignee,due:t.due||null,
+    description:t.description,comments:t.comments||[],
+    created_by:t.created_by||null,
+    updated_at:new Date().toISOString()
   });
-  if(error) { setSyncing(false,'Save failed'); console.error(error); return; }
+  if(error){setSyncing(false,'Save failed');console.error(error);return;}
   setSyncing(false,'Saved ✓');
   setTimeout(()=>setSyncing(false,'Synced'),2000);
 }
 
 async function deleteTaskDB(id) {
-  setSyncing(true,'Deleting…');
-  const {error} = await db.from('tasks').delete().eq('id',id);
-  if(error) { setSyncing(false,'Delete failed'); return; }
-  setSyncing(false,'Deleted ✓');
-  setTimeout(()=>setSyncing(false,'Synced'),2000);
+  const {error}=await db.from('tasks').delete().eq('id',id);
+  if(error) console.error(error);
 }
 
 async function upsertMember(name) {
@@ -267,20 +278,99 @@ async function deleteMemberDB(name) {
   await db.from('members').delete().eq('name',name);
 }
 
-// Auto refresh every 30s
+// Auto-refresh every 30s
 setInterval(async()=>{
   if(document.hidden) return;
   await loadAll(); render();
 },30000);
 
+function switchUser() {
+  localStorage.removeItem('teamflow_user');
+  if(presenceChannel) presenceChannel.unsubscribe();
+  onlineUsers = {};
+  currentUser = null;
+  showWhoAmI();
+}
+
+// ── PRESENCE ──────────────────────────────────────────────────────────────────
+function showWhoAmI() {
+  const wrap = document.getElementById('whoami-list');
+  wrap.innerHTML = `
+    <p style="font-size:12px;color:#9CA3AF;margin-bottom:8px;">เลือกชื่อจากทีม:</p>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${members.map(m=>`
+        <button onclick="selectUser('${m}')" style="display:flex;align-items:center;gap:12px;background:#F9FAFB;border:2px solid #E5E7EB;border-radius:12px;padding:12px 16px;cursor:pointer;width:100%;transition:all .15s;"
+          onmouseover="this.style.borderColor='#6366F1';this.style.background='#EEF2FF'"
+          onmouseout="this.style.borderColor='#E5E7EB';this.style.background='#F9FAFB'">
+          ${avatarHTML(m,36)}<span style="font-size:15px;font-weight:600;color:#111827;">${m}</span>
+        </button>`).join('')}
+    </div>
+    <div style="border-top:1px solid #E5E7EB;margin:16px 0;"></div>
+    <p style="font-size:12px;color:#9CA3AF;margin-bottom:8px;">หรือพิมพ์ชื่อใหม่:</p>
+    <div style="display:flex;gap:8px;">
+      <input id="custom-name-input" placeholder="ชื่อของคุณ…"
+        style="flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;font-size:13px;"
+        onkeydown="if(event.key==='Enter')selectCustomUser()"/>
+      <button onclick="selectCustomUser()" class="btn-primary" style="padding:8px 16px;font-size:13px;">เข้าใช้</button>
+    </div>`;
+  openModal('modal-whoami');
+}
+
+async function selectCustomUser() {
+  const input = document.getElementById('custom-name-input');
+  const name  = input.value.trim();
+  if(!name){ input.focus(); return; }
+  if(!members.includes(name)){
+    await upsertMember(name);
+    members.push(name);
+    renderFilters();
+  }
+  selectUser(name);
+}
+
+function selectUser(name) {
+  currentUser = name;
+  closeModal('modal-whoami');
+  initPresence();
+}
+
+function initPresence() {
+  if(presenceChannel) presenceChannel.unsubscribe();
+  presenceChannel = db.channel('online-users',{config:{presence:{key:currentUser}}});
+  presenceChannel
+    .on('presence',{event:'sync'},()=>{
+      const state=presenceChannel.presenceState();
+      onlineUsers={};
+      Object.keys(state).forEach(k=>{onlineUsers[k]=true;});
+      renderOnlineAvatars();
+    })
+    .on('presence',{event:'join'},({key})=>{onlineUsers[key]=true;renderOnlineAvatars();})
+    .on('presence',{event:'leave'},({key})=>{delete onlineUsers[key];renderOnlineAvatars();})
+    .subscribe(async status=>{
+      if(status==='SUBSCRIBED')
+        await presenceChannel.track({user:currentUser,online_at:new Date().toISOString()});
+    });
+}
+
+function renderOnlineAvatars() {
+  const online=Object.keys(onlineUsers);
+  document.getElementById('online-avatars').innerHTML=`
+    <span style="font-size:11px;color:#9CA3AF;">🟢 ${online.length}</span>
+    <div style="display:flex;">${online.map((u,i)=>`
+      <div title="${u}" style="margin-left:${i>0?'-8px':'0'};z-index:${10-i};position:relative;">
+        ${avatarHTML(u,28)}</div>`).join('')}
+    </div>
+    <span style="font-size:11px;color:#6366F1;font-weight:600;">คุณ: ${currentUser}</span>`;
+}
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function setSyncing(on,msg=''){
-  const dot=document.getElementById('sync-dot'), txt=document.getElementById('sync-text');
+  const dot=document.getElementById('sync-dot'),txt=document.getElementById('sync-text');
   dot.className='dot '+(on?'syncing':'ok');
   txt.textContent=msg||(on?'Syncing…':'Synced');
 }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openModal(id){document.getElementById(id).classList.add('open');}
 function avatarHTML(name,size=28){
   const i=name?name.charCodeAt(0)%AVATAR_COLORS.length:0;
   return `<div class="avatar" style="width:${size}px;height:${size}px;background:${AVATAR_COLORS[i]};font-size:${Math.round(size*.38)}px;">${name?name[0].toUpperCase():'?'}</div>`;
@@ -293,20 +383,19 @@ function filtered(){
   return tasks.filter(t=>
     (fAssignee==='All Assignees'||t.assignee===fAssignee)&&
     (fPriority==='All Priorities'||t.priority===fPriority)&&
-    (fProject==='All Projects'||t.project===fProject)
-  );
+    (fProject==='All Projects'||t.project===fProject));
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
-function render(){ renderDashboard(); renderFilters(); renderKanban(); renderList(); }
+function render(){renderDashboard();renderFilters();renderKanban();renderList();}
 
 function renderDashboard(){
-  const done=tasks.filter(t=>t.status==='Done').length, total=tasks.length;
+  const done=tasks.filter(t=>t.status==='Done').length,total=tasks.length;
   const pct=total?Math.round(done/total*100):0;
   const rings=projects.map((p,i)=>{
     const pt=tasks.filter(t=>t.project===p);
     const pp=pt.length?Math.round(pt.filter(t=>t.status==='Done').length/pt.length*100):0;
-    return `<div style="display:flex;align-items:center;gap:8px;">${progressRing(pp,PROJ_COLORS[i],40)}<span style="font-size:12px;color:#6B7280;font-weight:600;">${p}</span></div>`;
+    return `<div style="display:flex;align-items:center;gap:8px;">${progressRing(pp,PROJ_COLORS[i%PROJ_COLORS.length],40)}<span style="font-size:12px;color:#6B7280;font-weight:600;">${p}</span></div>`;
   }).join('');
   document.getElementById('dash-progress').innerHTML=`
     <div style="display:flex;align-items:center;gap:12px;">${progressRing(pct,'#6366F1',52)}
@@ -315,33 +404,34 @@ function renderDashboard(){
     <div style="width:1px;height:40px;background:#E5E7EB;flex-shrink:0;"></div>
     <div style="display:flex;gap:20px;flex-wrap:wrap;">${rings}</div>`;
   document.getElementById('dash-counts').innerHTML=STATUSES.map(s=>{
-    const sc=STATUS_COLORS[s], cnt=tasks.filter(t=>t.status===s).length;
+    const sc=STATUS_COLORS[s],cnt=tasks.filter(t=>t.status===s).length;
     return `<div class="stat-box"><div class="stat-num" style="color:${sc.text};">${cnt}</div><div class="stat-label">${s}</div></div>`;
   }).join('');
 }
 
 function renderFilters(){
-  const fa=document.getElementById('f-assignee'), fp=document.getElementById('f-project');
-  const va=fa.value, vp=fp.value;
+  const fa=document.getElementById('f-assignee'),fp=document.getElementById('f-project');
+  const va=fa.value,vp=fp.value;
   fa.innerHTML='<option>All Assignees</option>'+members.map(m=>`<option>${m}</option>`).join('');
   fp.innerHTML='<option>All Projects</option>'+projects.map(p=>`<option>${p}</option>`).join('');
-  fa.value=va; fp.value=vp;
+  fa.value=va;fp.value=vp;
 }
+
 function applyFilter(){
   fAssignee=document.getElementById('f-assignee').value;
   fPriority=document.getElementById('f-priority').value;
   fProject =document.getElementById('f-project').value;
-  document.getElementById('btn-clear').style.display=
-    (fAssignee!=='All Assignees'||fPriority!=='All Priorities'||fProject!=='All Projects')?'':'none';
-  renderKanban(); renderList();
+  const active=fAssignee!=='All Assignees'||fPriority!=='All Priorities'||fProject!=='All Projects';
+  document.getElementById('btn-clear').style.display=active?'':'none';
+  renderKanban();renderList();
 }
 function clearFilter(){
-  fAssignee='All Assignees'; fPriority='All Priorities'; fProject='All Projects';
+  fAssignee='All Assignees';fPriority='All Priorities';fProject='All Projects';
   document.getElementById('f-assignee').value='All Assignees';
   document.getElementById('f-priority').value='All Priorities';
   document.getElementById('f-project').value='All Projects';
   document.getElementById('btn-clear').style.display='none';
-  renderKanban(); renderList();
+  renderKanban();renderList();
 }
 
 function cardHTML(t){
@@ -368,8 +458,8 @@ function cardHTML(t){
 
 function renderKanban(){
   document.getElementById('kanban').innerHTML=STATUSES.map(status=>{
-    const sc=STATUS_COLORS[status], col=filtered().filter(t=>t.status===status);
-    return `<div class="col" data-status="${status}" style="background:${sc.bg};"
+    const sc=STATUS_COLORS[status],col=filtered().filter(t=>t.status===status);
+    return `<div class="col" style="background:${sc.bg};"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="this.classList.remove('drag-over')"
       ondrop="dropCard('${status}',this)">
@@ -386,7 +476,7 @@ function renderList(){
     const pt=filtered().filter(t=>t.project===proj);
     if(!pt.length) return '';
     return `<div class="list-group">
-      <div class="list-header" style="background:linear-gradient(90deg,${PROJ_COLORS[pi]},${PROJ_COLORS[(pi+1)%PROJ_COLORS.length]});">
+      <div class="list-header" style="background:linear-gradient(90deg,${PROJ_COLORS[pi%PROJ_COLORS.length]},${PROJ_COLORS[(pi+1)%PROJ_COLORS.length]});">
         ${proj} <span style="opacity:.8;font-size:12px;">${pt.length} task${pt.length!==1?'s':''}</span>
       </div>
       <table><thead><tr><th>TASK</th><th>STATUS</th><th>PRIORITY</th><th>ASSIGNEE</th><th>DUE</th><th>COMMENTS</th></tr></thead>
@@ -420,15 +510,15 @@ async function dropCard(status,col){
   col.classList.remove('drag-over');
   if(!draggingId) return;
   const t=tasks.find(x=>x.id==draggingId);
-  if(t&&t.status!==status){ t.status=status; render(); await upsertTask(t); }
+  if(t&&t.status!==status){t.status=status;render();await upsertTask(t);}
   draggingId=null;
 }
 
 // ── DETAIL MODAL ──────────────────────────────────────────────────────────────
 function openDetail(id){
   selectedId=id;
-  const t=tasks.find(x=>x.id==id); if(!t) return;
-  renderDetailContent(t); openModal('modal-detail');
+  const t=tasks.find(x=>x.id==id);if(!t) return;
+  renderDetailContent(t);openModal('modal-detail');
 }
 function renderDetailContent(t){
   const sc=STATUS_COLORS[t.status]||STATUS_COLORS['To Do'];
@@ -440,6 +530,10 @@ function renderDetailContent(t){
     <span class="badge" style="background:#F3F4F6;color:#374151;">${t.project}</span>`;
   document.getElementById('detail-assignee').innerHTML=`<div style="display:flex;align-items:center;gap:6px;">${avatarHTML(t.assignee,24)}<span style="font-size:13px;color:#374151;">${t.assignee}</span></div>`;
   document.getElementById('detail-due').textContent=t.due||'—';
+  document.getElementById('detail-pic').innerHTML=t.created_by
+    ?`<div style="display:flex;align-items:center;gap:6px;">${avatarHTML(t.created_by,24)}<span style="font-size:13px;color:#374151;">${t.created_by}</span></div>`
+    :`<span style="font-size:13px;color:#9CA3AF;">—</span>`;
+  document.getElementById('detail-project').textContent=t.project||'—';
   document.getElementById('detail-desc').textContent=t.description||'No description.';
   document.getElementById('comment-header').textContent=`💬 Comments (${(t.comments||[]).length})`;
   document.getElementById('detail-actions').innerHTML=`
@@ -462,15 +556,15 @@ function showDelConfirm(id){
 }
 async function deleteTask(id){
   tasks=tasks.filter(t=>t.id!=id);
-  closeModal('modal-detail'); render();
+  closeModal('modal-detail');render();
   await deleteTaskDB(id);
 }
 async function postComment(){
   const inp=document.getElementById('comment-input');
-  const txt=inp.value.trim(); if(!txt) return;
-  const t=tasks.find(x=>x.id==selectedId); if(!t) return;
-  t.comments=[...(t.comments||[]),{author:'You',text:txt,time:new Date().toISOString().slice(0,10)}];
-  inp.value=''; renderDetailContent(t);
+  const txt=inp.value.trim();if(!txt) return;
+  const t=tasks.find(x=>x.id==selectedId);if(!t) return;
+  t.comments=[...(t.comments||[]),{author:currentUser||'You',text:txt,time:new Date().toISOString().slice(0,10)}];
+  inp.value='';renderDetailContent(t);
   await upsertTask(t);
 }
 
@@ -482,14 +576,14 @@ function openNew(){
   document.getElementById('tf-project').innerHTML=projects.map(p=>`<option>${p}</option>`).join('');
   document.getElementById('tf-status').value='To Do';
   document.getElementById('tf-priority').value='Medium';
-  document.getElementById('tf-assignee').innerHTML=members.map(m=>`<option>${m}</option>`).join('');
+  document.getElementById('tf-assignee').innerHTML=members.map(m=>`<option${m===currentUser?' selected':''}>${m}</option>`).join('');
   document.getElementById('tf-due').value='';
   document.getElementById('tf-desc').value='';
   openModal('modal-task');
 }
 function openEdit(id){
-  const t=tasks.find(x=>x.id==id); if(!t) return;
-  editingId=id; closeModal('modal-detail');
+  const t=tasks.find(x=>x.id==id);if(!t) return;
+  editingId=id;closeModal('modal-detail');
   document.getElementById('task-modal-title').textContent='✏️ Edit Task';
   document.getElementById('tf-title').value=t.title;
   document.getElementById('tf-project').innerHTML=projects.map(p=>`<option${p===t.project?' selected':''}>${p}</option>`).join('');
@@ -502,68 +596,29 @@ function openEdit(id){
 }
 async function submitTask(){
   const title=document.getElementById('tf-title').value.trim();
-  if(!title){ alert('Please enter a task title.'); return; }
+  if(!title){alert('Please enter a task title.');return;}
   const taskData={
-    id: editingId||Date.now().toString(),
-    title, project:document.getElementById('tf-project').value,
+    id:editingId||Date.now().toString(),title,
+    project:document.getElementById('tf-project').value,
     status:document.getElementById('tf-status').value,
     priority:document.getElementById('tf-priority').value,
     assignee:document.getElementById('tf-assignee').value,
     due:document.getElementById('tf-due').value||null,
     description:document.getElementById('tf-desc').value,
-    comments: editingId ? (tasks.find(t=>t.id==editingId)||{}).comments||[] : [],
+    comments:editingId?(tasks.find(t=>t.id==editingId)||{}).comments||[]:[],
+    created_by:editingId?(tasks.find(t=>t.id==editingId)||{}).created_by||currentUser:currentUser
   };
-  if(editingId){ tasks=tasks.map(t=>t.id==editingId?taskData:t); }
-  else { tasks.push(taskData); }
-  const ps={};
-  tasks.forEach(t=>{ if(t.project) ps[t.project]=1; });
+  if(editingId){tasks=tasks.map(t=>t.id==editingId?taskData:t);}
+  else{tasks.push(taskData);}
+  const ps={};tasks.forEach(t=>{if(t.project) ps[t.project]=1;});
   projects=Object.keys(ps);
-  closeModal('modal-task'); render();
+  closeModal('modal-task');render();
   await upsertTask(taskData);
-}
-
-// ── PROJECTS ──────────────────────────────────────────────────────────────────
-let pendingProjects=[];
-function openProjects(){
-  pendingProjects=[...projects];
-  renderProjectsList(); openModal('modal-projects');
-}
-function renderProjectsList(){
-  document.getElementById('projects-list').innerHTML=pendingProjects.map((p,i)=>{
-    const hasTask=tasks.some(t=>t.project===p);
-    return `<div style="display:flex;align-items:center;gap:10px;background:#F9FAFB;border-radius:10px;padding:10px 14px;">
-      <div style="width:12px;height:12px;border-radius:3px;background:${PROJ_COLORS[i%PROJ_COLORS.length]};flex-shrink:0;"></div>
-      <span style="flex:1;font-size:14px;font-weight:600;color:#111827;">${p}</span>
-      ${hasTask?`<span style="font-size:11px;color:#9CA3AF;background:#E5E7EB;border-radius:20px;padding:2px 8px;">${tasks.filter(t=>t.project===p).length} tasks</span>`:''}
-      ${pendingProjects.length>1?`<button onclick="removeProject(${i})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:600;" ${hasTask?'title="Warning: has tasks"':''}>
-        ${hasTask?'⚠️ ':''}Remove</button>`:''}
-    </div>`;
-  }).join('');
-}
-function addProjectInline(){
-  const n=document.getElementById('new-project-input').value.trim();
-  if(!n||pendingProjects.includes(n)) return;
-  pendingProjects.push(n);
-  document.getElementById('new-project-input').value='';
-  renderProjectsList();
-}
-function removeProject(i){
-  const p=pendingProjects[i];
-  const hasTask=tasks.some(t=>t.project===p);
-  if(hasTask && !confirm(`"${p}" มี tasks อยู่ ถ้าลบ Project tasks เหล่านั้นจะยังอยู่แต่ไม่มี Project\nต้องการลบต่อไหม?`)) return;
-  pendingProjects.splice(i,1);
-  renderProjectsList();
-}
-function saveProjects(){
-  projects=[...pendingProjects];
-  closeModal('modal-projects');
-  render();
 }
 
 // ── MEMBERS ───────────────────────────────────────────────────────────────────
 function openMembers(){
-  pendingMembers=[...members];
-  renderMembersList(); openModal('modal-members');
+  pendingMembers=[...members];renderMembersList();openModal('modal-members');
 }
 function renderMembersList(){
   document.getElementById('members-list').innerHTML=pendingMembers.map((m,i)=>`
@@ -579,25 +634,55 @@ function addMemberInline(){
   document.getElementById('new-member-input').value='';
   renderMembersList();
 }
-function removePendingMember(i){ pendingMembers.splice(i,1); renderMembersList(); }
+function removePendingMember(i){pendingMembers.splice(i,1);renderMembersList();}
 async function saveMembers(){
   const added=pendingMembers.filter(m=>!members.includes(m));
   const removed=members.filter(m=>!pendingMembers.includes(m));
-  await Promise.all([
-    ...added.map(upsertMember),
-    ...removed.map(deleteMemberDB),
-  ]);
+  await Promise.all([...added.map(upsertMember),...removed.map(deleteMemberDB)]);
   members=[...pendingMembers];
-  closeModal('modal-members'); renderFilters();
+  closeModal('modal-members');renderFilters();
+}
+
+// ── PROJECTS ──────────────────────────────────────────────────────────────────
+function openProjects(){
+  pendingProjects=[...projects];renderProjectsList();openModal('modal-projects');
+}
+function renderProjectsList(){
+  document.getElementById('projects-list').innerHTML=pendingProjects.map((p,i)=>{
+    const cnt=tasks.filter(t=>t.project===p).length;
+    return `<div style="display:flex;align-items:center;gap:10px;background:#F9FAFB;border-radius:10px;padding:10px 14px;">
+      <div style="width:12px;height:12px;border-radius:3px;background:${PROJ_COLORS[i%PROJ_COLORS.length]};flex-shrink:0;"></div>
+      <span style="flex:1;font-size:14px;font-weight:600;color:#111827;">${p}</span>
+      ${cnt?`<span style="font-size:11px;color:#9CA3AF;background:#E5E7EB;border-radius:20px;padding:2px 8px;">${cnt} tasks</span>`:''}
+      ${pendingProjects.length>1?`<button onclick="removeProject(${i})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:600;">${cnt?'⚠️ ':''}Remove</button>`:''}
+    </div>`;
+  }).join('');
+}
+function addProjectInline(){
+  const n=document.getElementById('new-project-input').value.trim();
+  if(!n||pendingProjects.includes(n)) return;
+  pendingProjects.push(n);
+  document.getElementById('new-project-input').value='';
+  renderProjectsList();
+}
+function removeProject(i){
+  const p=pendingProjects[i];
+  const cnt=tasks.filter(t=>t.project===p).length;
+  if(cnt&&!confirm(`"${p}" มี ${cnt} tasks อยู่ ถ้าลบ tasks เหล่านั้นจะยังอยู่แต่ไม่มี Project\nต้องการลบต่อไหม?`)) return;
+  pendingProjects.splice(i,1);renderProjectsList();
+}
+function saveProjects(){
+  projects=[...pendingProjects];closeModal('modal-projects');render();
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 (async()=>{
   try{
     await loadAll();
-    render(); setView('kanban');
+    render();setView('kanban');
     document.getElementById('loading').style.display='none';
     document.getElementById('app').style.display='';
+    showWhoAmI();
   }catch(e){
     document.getElementById('load-msg').textContent='❌ Failed: '+e.message;
     console.error(e);
