@@ -4,12 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>TeamFlow</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',system-ui,sans-serif;background:linear-gradient(135deg,#EEF2FF 0%,#FDF4FF 50%,#FFF7ED 100%);min-height:100vh;}
 button{cursor:pointer;font-family:inherit;}
 input,select,textarea{font-family:inherit;}
-
 #header{background:#fff;border-bottom:1px solid #E5E7EB;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.05);gap:10px;flex-wrap:wrap;}
 #logo{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:800;color:#111827;}
 .view-btn{border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;background:#F3F4F6;color:#374151;}
@@ -18,20 +18,16 @@ input,select,textarea{font-family:inherit;}
 #btn-team{background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;}
 #sync-status{font-size:11px;color:#9CA3AF;display:flex;align-items:center;gap:4px;}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:#9CA3AF;}
-.dot.ok{background:#4ADE80;}
-.dot.syncing{background:#FB923C;animation:pulse 1s infinite;}
+.dot.ok{background:#4ADE80;}.dot.syncing{background:#FB923C;animation:pulse 1s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-
 #dashboard{display:grid;grid-template-columns:1fr auto;gap:16px;margin-bottom:20px;}
 .dash-card{background:#fff;border-radius:16px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
 .stat-box{text-align:center;padding:4px 10px;}
 .stat-num{font-size:20px;font-weight:800;}
 .stat-label{font-size:10px;color:#9CA3AF;font-weight:600;white-space:nowrap;}
-
 #filters{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
 #filters select{border:1px solid #E5E7EB;border-radius:8px;padding:6px 12px;font-size:13px;color:#374151;background:#fff;}
 #btn-clear{background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;display:none;}
-
 #kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
 .col{border-radius:16px;padding:14px;min-height:200px;border:2px solid transparent;transition:background .15s,border .15s;}
 .col.drag-over{border:2px dashed #818CF8!important;background:rgba(99,102,241,.06)!important;}
@@ -39,7 +35,6 @@ input,select,textarea{font-family:inherit;}
 .col-dot{width:8px;height:8px;border-radius:50%;}
 .col-title{font-weight:700;font-size:13px;}
 .col-count{margin-left:auto;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;background:rgba(0,0,0,.07);}
-
 .card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.07);cursor:pointer;border-left:4px solid #ccc;transition:transform .15s,box-shadow .15s;user-select:none;}
 .card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.11);}
 .card-title{font-size:13px;font-weight:600;color:#111827;line-height:1.4;}
@@ -47,7 +42,6 @@ input,select,textarea{font-family:inherit;}
 .card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
 .avatar{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.15);}
 .badge{border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;}
-
 #list{display:flex;flex-direction:column;gap:16px;}
 .list-group{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);}
 .list-header{padding:12px 20px;color:#fff;font-weight:700;font-size:14px;}
@@ -56,7 +50,6 @@ th{padding:10px 16px;font-size:11px;font-weight:700;color:#9CA3AF;text-align:lef
 td{padding:12px 16px;font-size:13px;border-bottom:1px solid #F3F4F6;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:#F9FAFB;cursor:pointer;}
-
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;}
 .overlay.open{display:flex;}
 .modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
@@ -70,7 +63,6 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
 .btn-danger{background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:7px 18px;font-size:13px;cursor:pointer;}
 .comment-block{display:flex;gap:8px;margin-bottom:10px;}
 .comment-body{background:#F9FAFB;border-radius:10px;padding:8px 12px;flex:1;}
-
 #loading{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
 .spinner{width:40px;height:40px;border:4px solid #E5E7EB;border-top-color:#6366F1;border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -81,7 +73,7 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
 <div id="loading">
   <div class="spinner"></div>
   <div style="font-size:15px;font-weight:700;color:#6366F1;">Loading TeamFlow…</div>
-  <div id="load-msg" style="font-size:13px;color:#9CA3AF;">Connecting to Google Sheets…</div>
+  <div id="load-msg" style="font-size:13px;color:#9CA3AF;">Connecting to Supabase…</div>
 </div>
 
 <div id="app" style="display:none;">
@@ -97,7 +89,6 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
       <button id="btn-new" onclick="openNew()">+ New Task</button>
     </div>
   </div>
-
   <div style="padding:20px 24px;">
     <div id="dashboard">
       <div class="dash-card" id="dash-progress"></div>
@@ -181,8 +172,10 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
 </div>
 
 <script>
-// ── CONFIG — change this to your Apps Script URL ─────────────────────────────
-const SCRIPT_URL = 'https://script.google.com/a/macros/garena.com/s/AKfycbxDFBe9oa6-DlACgPY5v3etbza7k5lLOg5ueBh6S2vILUwMdpuXhvB5mLHtx9c3tHi-kQ/exec';
+// ── SUPABASE CONFIG ───────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://hdruqpgbbnvuawbbztfn.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkcnVxcGdiYm52dWF3YmJ6dGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Mjk3OTQsImV4cCI6MjA5MzEwNTc5NH0.4_6mJgWQvbB8N8iTawqFm-LXs5IF_j8OzZstriQ7GFM';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const STATUSES = ['To Do','In Progress','Review','Done'];
@@ -206,85 +199,79 @@ let editingId=null, selectedId=null, draggingId=null, pendingMembers=[];
 let fAssignee='All Assignees', fPriority='All Priorities', fProject='All Projects';
 
 // ── API ───────────────────────────────────────────────────────────────────────
-async function apiGet(action){
-  const r=await fetch(`${SCRIPT_URL}?action=${action}`);
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  return r.json();
-}
-async function apiPost(body){
-  const r=await fetch(SCRIPT_URL,{
-    method:'POST',
-    headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify(body)
-  });
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  return r.json();
-}
-
-// ── LOAD & SAVE ───────────────────────────────────────────────────────────────
-async function loadAll(){
+async function loadAll() {
   setSyncing(true);
-  try{
-    const [td,md]=await Promise.all([apiGet('getTasks'),apiGet('getMembers')]);
-    tasks=td.tasks||[];
-    members=md.members||[];
-    projects=[...new Set(tasks.map(t=>t.project).filter(Boolean))];
+  try {
+    const [{data:td,error:te},{data:md,error:me}] = await Promise.all([
+      db.from('tasks').select('*').order('updated_at',{ascending:true}),
+      db.from('members').select('*').order('id',{ascending:true}),
+    ]);
+    if(te) throw te;
+    if(me) throw me;
+    tasks   = (td||[]).map(t=>({...t, comments: t.comments||[]}));
+    members = (md||[]).map(m=>m.name);
+    const ps={};
+    tasks.forEach(t=>{ if(t.project) ps[t.project]=1; });
+    projects=Object.keys(ps);
     if(!projects.length) projects=['Operation','Design'];
     setSyncing(false,'Synced');
-  }catch(e){
-    setSyncing(false,'Error – check console');
+  } catch(e) {
+    setSyncing(false,'Error');
     console.error(e);
     throw e;
   }
 }
-async function saveAllTasks(){
+
+async function upsertTask(t) {
   setSyncing(true,'Saving…');
-  try{
-    await apiPost({action:'saveTasks',tasks});
-    setSyncing(false,'Saved ✓');
-    setTimeout(()=>setSyncing(false,'Synced'),2000);
-  }catch(e){setSyncing(false,'Save failed');console.error(e);}
-}
-async function saveAllMembers(){
-  setSyncing(true,'Saving…');
-  try{
-    await apiPost({action:'saveMembers',members});
-    setSyncing(false,'Saved ✓');
-    setTimeout(()=>setSyncing(false,'Synced'),2000);
-  }catch(e){setSyncing(false,'Save failed');console.error(e);}
+  const {error} = await db.from('tasks').upsert({
+    id:t.id, title:t.title, project:t.project, status:t.status,
+    priority:t.priority, assignee:t.assignee, due:t.due||null,
+    description:t.description, comments:t.comments||[],
+    updated_at: new Date().toISOString()
+  });
+  if(error) { setSyncing(false,'Save failed'); console.error(error); return; }
+  setSyncing(false,'Saved ✓');
+  setTimeout(()=>setSyncing(false,'Synced'),2000);
 }
 
-// Auto-refresh every 30 seconds
+async function deleteTaskDB(id) {
+  setSyncing(true,'Deleting…');
+  const {error} = await db.from('tasks').delete().eq('id',id);
+  if(error) { setSyncing(false,'Delete failed'); return; }
+  setSyncing(false,'Deleted ✓');
+  setTimeout(()=>setSyncing(false,'Synced'),2000);
+}
+
+async function upsertMember(name) {
+  await db.from('members').upsert({name},{onConflict:'name'});
+}
+async function deleteMemberDB(name) {
+  await db.from('members').delete().eq('name',name);
+}
+
+// Auto refresh every 30s
 setInterval(async()=>{
   if(document.hidden) return;
-  await loadAll();
-  render();
+  await loadAll(); render();
 },30000);
 
-// ── SYNC INDICATOR ────────────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────────────────────
 function setSyncing(on,msg=''){
-  const dot=document.getElementById('sync-dot');
-  const txt=document.getElementById('sync-text');
+  const dot=document.getElementById('sync-dot'), txt=document.getElementById('sync-text');
   dot.className='dot '+(on?'syncing':'ok');
   txt.textContent=msg||(on?'Syncing…':'Synced');
 }
-
-// ── HELPERS ───────────────────────────────────────────────────────────────────
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
 function avatarHTML(name,size=28){
   const i=name?name.charCodeAt(0)%AVATAR_COLORS.length:0;
   return `<div class="avatar" style="width:${size}px;height:${size}px;background:${AVATAR_COLORS[i]};font-size:${Math.round(size*.38)}px;">${name?name[0].toUpperCase():'?'}</div>`;
 }
 function progressRing(pct,color,size=44){
   const r=(size-6)/2,c=2*Math.PI*r,d=(pct/100)*c;
-  return `<svg width="${size}" height="${size}">
-    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#E5E7EB" stroke-width="5"/>
-    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="5"
-      stroke-dasharray="${d} ${c-d}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})"/>
-    <text x="${size/2}" y="${size/2+4}" text-anchor="middle" font-size="10" font-weight="700" fill="${color}">${pct}%</text>
-  </svg>`;
+  return `<svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#E5E7EB" stroke-width="5"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="5" stroke-dasharray="${d} ${c-d}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})"/><text x="${size/2}" y="${size/2+4}" text-anchor="middle" font-size="10" font-weight="700" fill="${color}">${pct}%</text></svg>`;
 }
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-function openModal(id){document.getElementById(id).classList.add('open');}
 function filtered(){
   return tasks.filter(t=>
     (fAssignee==='All Assignees'||t.assignee===fAssignee)&&
@@ -294,12 +281,7 @@ function filtered(){
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
-function render(){
-  renderDashboard();
-  renderFilters();
-  renderKanban();
-  renderList();
-}
+function render(){ renderDashboard(); renderFilters(); renderKanban(); renderList(); }
 
 function renderDashboard(){
   const done=tasks.filter(t=>t.status==='Done').length, total=tasks.length;
@@ -311,13 +293,12 @@ function renderDashboard(){
   }).join('');
   document.getElementById('dash-progress').innerHTML=`
     <div style="display:flex;align-items:center;gap:12px;">${progressRing(pct,'#6366F1',52)}
-      <div><div style="font-size:11px;color:#9CA3AF;font-weight:600;">OVERALL PROGRESS</div>
-      <div style="font-size:16px;font-weight:800;color:#111827;">${done}/${total} Tasks Done</div></div>
-    </div>
+    <div><div style="font-size:11px;color:#9CA3AF;font-weight:600;">OVERALL PROGRESS</div>
+    <div style="font-size:16px;font-weight:800;color:#111827;">${done}/${total} Tasks Done</div></div></div>
     <div style="width:1px;height:40px;background:#E5E7EB;flex-shrink:0;"></div>
     <div style="display:flex;gap:20px;flex-wrap:wrap;">${rings}</div>`;
   document.getElementById('dash-counts').innerHTML=STATUSES.map(s=>{
-    const sc=STATUS_COLORS[s],cnt=tasks.filter(t=>t.status===s).length;
+    const sc=STATUS_COLORS[s], cnt=tasks.filter(t=>t.status===s).length;
     return `<div class="stat-box"><div class="stat-num" style="color:${sc.text};">${cnt}</div><div class="stat-label">${s}</div></div>`;
   }).join('');
 }
@@ -328,16 +309,13 @@ function renderFilters(){
   fa.innerHTML='<option>All Assignees</option>'+members.map(m=>`<option>${m}</option>`).join('');
   fp.innerHTML='<option>All Projects</option>'+projects.map(p=>`<option>${p}</option>`).join('');
   fa.value=va; fp.value=vp;
-  const active=fAssignee!=='All Assignees'||fPriority!=='All Priorities'||fProject!=='All Projects';
-  document.getElementById('btn-clear').style.display=active?'':'none';
 }
-
 function applyFilter(){
   fAssignee=document.getElementById('f-assignee').value;
   fPriority=document.getElementById('f-priority').value;
-  fProject=document.getElementById('f-project').value;
-  const active=fAssignee!=='All Assignees'||fPriority!=='All Priorities'||fProject!=='All Projects';
-  document.getElementById('btn-clear').style.display=active?'':'none';
+  fProject =document.getElementById('f-project').value;
+  document.getElementById('btn-clear').style.display=
+    (fAssignee!=='All Assignees'||fPriority!=='All Priorities'||fProject!=='All Projects')?'':'none';
   renderKanban(); renderList();
 }
 function clearFilter(){
@@ -353,11 +331,9 @@ function cardHTML(t){
   const sc=STATUS_COLORS[t.status]||STATUS_COLORS['To Do'];
   const pc=PRIORITY_COLORS[t.priority]||PRIORITY_COLORS['Medium'];
   const today=new Date().toISOString().slice(0,10);
-  const overdue=t.due&&t.due<today&&t.status!=='Done';
-  return `<div class="card" draggable="true" data-id="${t.id}"
-    style="border-left-color:${sc.border};"
-    ondragstart="draggingId='${t.id}'"
-    onclick="openDetail('${t.id}')">
+  const ov=t.due&&t.due<today&&t.status!=='Done';
+  return `<div class="card" draggable="true" data-id="${t.id}" style="border-left-color:${sc.border};"
+    ondragstart="draggingId='${t.id}'" onclick="openDetail('${t.id}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
       <span class="card-title">${t.title}</span>
       <span class="badge" style="background:${pc.bg};color:${pc.text};">${t.priority}</span>
@@ -367,7 +343,7 @@ function cardHTML(t){
       <div style="display:flex;align-items:center;gap:5px;">${avatarHTML(t.assignee,22)}<span style="font-size:11px;color:#6B7280;">${t.assignee}</span></div>
       <div style="display:flex;align-items:center;gap:6px;">
         ${t.comments?.length?`<span style="font-size:11px;color:#9CA3AF;">💬${t.comments.length}</span>`:''}
-        ${t.due?`<span style="font-size:11px;color:${overdue?'#EF4444':'#9CA3AF'};font-weight:${overdue?700:400};">${overdue?'⚠️ ':'📅 '}${t.due}</span>`:''}
+        ${t.due?`<span style="font-size:11px;color:${ov?'#EF4444':'#9CA3AF'};font-weight:${ov?700:400};">${ov?'⚠️ ':'📅 '}${t.due}</span>`:''}
       </div>
     </div>
   </div>`;
@@ -375,35 +351,29 @@ function cardHTML(t){
 
 function renderKanban(){
   document.getElementById('kanban').innerHTML=STATUSES.map(status=>{
-    const sc=STATUS_COLORS[status];
-    const col=filtered().filter(t=>t.status===status);
+    const sc=STATUS_COLORS[status], col=filtered().filter(t=>t.status===status);
     return `<div class="col" data-status="${status}" style="background:${sc.bg};"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="this.classList.remove('drag-over')"
       ondrop="dropCard('${status}',this)">
-      <div class="col-header">
-        <div class="col-dot" style="background:${sc.dot};"></div>
+      <div class="col-header"><div class="col-dot" style="background:${sc.dot};"></div>
         <span class="col-title" style="color:${sc.text};">${status}</span>
         <span class="col-count" style="color:${sc.text};">${col.length}</span>
-      </div>
-      ${col.map(cardHTML).join('')}
-    </div>`;
+      </div>${col.map(cardHTML).join('')}</div>`;
   }).join('');
 }
 
 function renderList(){
+  const today=new Date().toISOString().slice(0,10);
   document.getElementById('list').innerHTML=projects.map((proj,pi)=>{
     const pt=filtered().filter(t=>t.project===proj);
     if(!pt.length) return '';
-    const today=new Date().toISOString().slice(0,10);
     return `<div class="list-group">
       <div class="list-header" style="background:linear-gradient(90deg,${PROJ_COLORS[pi]},${PROJ_COLORS[(pi+1)%PROJ_COLORS.length]});">
         ${proj} <span style="opacity:.8;font-size:12px;">${pt.length} task${pt.length!==1?'s':''}</span>
       </div>
-      <table><thead><tr>
-        <th>TASK</th><th>STATUS</th><th>PRIORITY</th><th>ASSIGNEE</th><th>DUE</th><th>COMMENTS</th>
-      </tr></thead><tbody>
-      ${pt.map(t=>{
+      <table><thead><tr><th>TASK</th><th>STATUS</th><th>PRIORITY</th><th>ASSIGNEE</th><th>DUE</th><th>COMMENTS</th></tr></thead>
+      <tbody>${pt.map(t=>{
         const sc=STATUS_COLORS[t.status]||STATUS_COLORS['To Do'];
         const pc=PRIORITY_COLORS[t.priority]||PRIORITY_COLORS['Medium'];
         const ov=t.due&&t.due<today&&t.status!=='Done';
@@ -415,8 +385,7 @@ function renderList(){
           <td style="color:${ov?'#EF4444':'#9CA3AF'};font-weight:${ov?700:400};">${ov?'⚠️ ':''}${t.due||'—'}</td>
           <td style="color:#9CA3AF;">${t.comments?.length?'💬 '+t.comments.length:'—'}</td>
         </tr>`;
-      }).join('')}
-      </tbody></table></div>`;
+      }).join('')}</tbody></table></div>`;
   }).join('');
 }
 
@@ -434,7 +403,7 @@ async function dropCard(status,col){
   col.classList.remove('drag-over');
   if(!draggingId) return;
   const t=tasks.find(x=>x.id==draggingId);
-  if(t&&t.status!==status){ t.status=status; render(); await saveAllTasks(); }
+  if(t&&t.status!==status){ t.status=status; render(); await upsertTask(t); }
   draggingId=null;
 }
 
@@ -442,10 +411,8 @@ async function dropCard(status,col){
 function openDetail(id){
   selectedId=id;
   const t=tasks.find(x=>x.id==id); if(!t) return;
-  renderDetailContent(t);
-  openModal('modal-detail');
+  renderDetailContent(t); openModal('modal-detail');
 }
-
 function renderDetailContent(t){
   const sc=STATUS_COLORS[t.status]||STATUS_COLORS['To Do'];
   const pc=PRIORITY_COLORS[t.priority]||PRIORITY_COLORS['Medium'];
@@ -462,15 +429,12 @@ function renderDetailContent(t){
     <button class="btn-secondary" style="font-size:13px;padding:7px 18px;" onclick="openEdit('${t.id}')">✏️ Edit</button>
     <div id="del-wrap"><button class="btn-danger" onclick="showDelConfirm('${t.id}')">🗑️ Delete</button></div>`;
   document.getElementById('detail-comments').innerHTML=(t.comments||[]).map(c=>`
-    <div class="comment-block">
-      ${avatarHTML(c.author,26)}
+    <div class="comment-block">${avatarHTML(c.author,26)}
       <div class="comment-body">
         <div style="font-size:11px;font-weight:700;color:#374151;">${c.author} <span style="font-weight:400;color:#9CA3AF;">${c.time}</span></div>
         <div style="font-size:13px;color:#4B5563;margin-top:2px;">${c.text}</div>
-      </div>
-    </div>`).join('');
+      </div></div>`).join('');
 }
-
 function showDelConfirm(id){
   document.getElementById('del-wrap').innerHTML=`
     <div style="display:flex;align-items:center;gap:8px;background:#FEF2F2;border-radius:10px;padding:8px 14px;">
@@ -479,25 +443,21 @@ function showDelConfirm(id){
       <button onclick="renderDetailContent(tasks.find(x=>x.id=='${id}'))" style="background:#F3F4F6;color:#374151;border:none;border-radius:7px;padding:6px 12px;font-size:13px;cursor:pointer;">Cancel</button>
     </div>`;
 }
-
 async function deleteTask(id){
   tasks=tasks.filter(t=>t.id!=id);
-  closeModal('modal-detail');
-  render();
-  await saveAllTasks();
+  closeModal('modal-detail'); render();
+  await deleteTaskDB(id);
 }
-
 async function postComment(){
   const inp=document.getElementById('comment-input');
   const txt=inp.value.trim(); if(!txt) return;
   const t=tasks.find(x=>x.id==selectedId); if(!t) return;
   t.comments=[...(t.comments||[]),{author:'You',text:txt,time:new Date().toISOString().slice(0,10)}];
-  inp.value='';
-  renderDetailContent(t);
-  await saveAllTasks();
+  inp.value=''; renderDetailContent(t);
+  await upsertTask(t);
 }
 
-// ── NEW / EDIT TASK ───────────────────────────────────────────────────────────
+// ── TASK FORM ─────────────────────────────────────────────────────────────────
 function openNew(){
   editingId=null;
   document.getElementById('task-modal-title').textContent='➕ New Task';
@@ -510,11 +470,9 @@ function openNew(){
   document.getElementById('tf-desc').value='';
   openModal('modal-task');
 }
-
 function openEdit(id){
   const t=tasks.find(x=>x.id==id); if(!t) return;
-  editingId=id;
-  closeModal('modal-detail');
+  editingId=id; closeModal('modal-detail');
   document.getElementById('task-modal-title').textContent='✏️ Edit Task';
   document.getElementById('tf-title').value=t.title;
   document.getElementById('tf-project').innerHTML=projects.map(p=>`<option${p===t.project?' selected':''}>${p}</option>`).join('');
@@ -525,49 +483,37 @@ function openEdit(id){
   document.getElementById('tf-desc').value=t.description||'';
   openModal('modal-task');
 }
-
 async function submitTask(){
   const title=document.getElementById('tf-title').value.trim();
-  if(!title){alert('Please enter a task title.');return;}
-  if(editingId){
-    const t=tasks.find(x=>x.id==editingId);
-    Object.assign(t,{
-      title, project:document.getElementById('tf-project').value,
-      status:document.getElementById('tf-status').value,
-      priority:document.getElementById('tf-priority').value,
-      assignee:document.getElementById('tf-assignee').value,
-      due:document.getElementById('tf-due').value,
-      description:document.getElementById('tf-desc').value
-    });
-  }else{
-    tasks.push({
-      id:Date.now().toString(), title,
-      project:document.getElementById('tf-project').value,
-      status:document.getElementById('tf-status').value,
-      priority:document.getElementById('tf-priority').value,
-      assignee:document.getElementById('tf-assignee').value,
-      due:document.getElementById('tf-due').value,
-      description:document.getElementById('tf-desc').value,
-      comments:[], updatedAt:''
-    });
-    projects=[...new Set(tasks.map(t=>t.project).filter(Boolean))];
-  }
-  closeModal('modal-task');
-  render();
-  await saveAllTasks();
+  if(!title){ alert('Please enter a task title.'); return; }
+  const taskData={
+    id: editingId||Date.now().toString(),
+    title, project:document.getElementById('tf-project').value,
+    status:document.getElementById('tf-status').value,
+    priority:document.getElementById('tf-priority').value,
+    assignee:document.getElementById('tf-assignee').value,
+    due:document.getElementById('tf-due').value||null,
+    description:document.getElementById('tf-desc').value,
+    comments: editingId ? (tasks.find(t=>t.id==editingId)||{}).comments||[] : [],
+  };
+  if(editingId){ tasks=tasks.map(t=>t.id==editingId?taskData:t); }
+  else { tasks.push(taskData); }
+  const ps={};
+  tasks.forEach(t=>{ if(t.project) ps[t.project]=1; });
+  projects=Object.keys(ps);
+  closeModal('modal-task'); render();
+  await upsertTask(taskData);
 }
 
 // ── MEMBERS ───────────────────────────────────────────────────────────────────
 function openMembers(){
   pendingMembers=[...members];
-  renderMembersList();
-  openModal('modal-members');
+  renderMembersList(); openModal('modal-members');
 }
 function renderMembersList(){
   document.getElementById('members-list').innerHTML=pendingMembers.map((m,i)=>`
     <div style="display:flex;align-items:center;gap:10px;background:#F9FAFB;border-radius:10px;padding:10px 14px;">
-      ${avatarHTML(m,32)}
-      <span style="flex:1;font-size:14px;font-weight:600;color:#111827;">${m}</span>
+      ${avatarHTML(m,32)}<span style="flex:1;font-size:14px;font-weight:600;color:#111827;">${m}</span>
       ${pendingMembers.length>1?`<button onclick="removePendingMember(${i})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-weight:600;">Remove</button>`:''}
     </div>`).join('');
 }
@@ -580,40 +526,26 @@ function addMemberInline(){
 }
 function removePendingMember(i){ pendingMembers.splice(i,1); renderMembersList(); }
 async function saveMembers(){
+  const added=pendingMembers.filter(m=>!members.includes(m));
+  const removed=members.filter(m=>!pendingMembers.includes(m));
+  await Promise.all([
+    ...added.map(upsertMember),
+    ...removed.map(deleteMemberDB),
+  ]);
   members=[...pendingMembers];
-  closeModal('modal-members');
-  renderFilters();
-  await saveAllMembers();
+  closeModal('modal-members'); renderFilters();
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 (async()=>{
   try{
     await loadAll();
-    // Seed if empty
-    if(!tasks.length){
-      tasks=[
-        {id:'1',title:'Plan Q2 operations review',  project:'Operation',status:'In Progress',priority:'High',  assignee:'Big', due:'2026-05-05',description:'Review all ops metrics for Q2.',comments:[]},
-        {id:'2',title:'Vendor contract renewals',   project:'Operation',status:'To Do',      priority:'High',  assignee:'Mark',due:'2026-05-02',description:'Renew contracts for 3 vendors.',comments:[]},
-        {id:'3',title:'Logistics flow optimisation',project:'Operation',status:'Review',     priority:'Medium',assignee:'Po',  due:'2026-05-10',description:'Identify bottlenecks in supply chain.',comments:[]},
-        {id:'4',title:'Supplier onboarding docs',   project:'Operation',status:'Done',       priority:'Low',   assignee:'Aof', due:'2026-04-25',description:'Complete supplier onboarding.',comments:[]},
-        {id:'5',title:'New landing page redesign',  project:'Design',   status:'In Progress',priority:'High',  assignee:'Folk',due:'2026-05-08',description:'Redesign homepage with new brand guide.',comments:[]},
-        {id:'6',title:'Social media graphic kit',   project:'Design',   status:'Done',       priority:'Low',   assignee:'Big', due:'2026-04-20',description:'Create May social calendar graphics.',comments:[]},
-        {id:'7',title:'Brand style guide update',   project:'Design',   status:'To Do',      priority:'Medium',assignee:'Mark',due:'2026-05-12',description:'Update typography and colour tokens.',comments:[]},
-      ];
-      projects=['Operation','Design'];
-      await saveAllTasks();
-    }
-    if(!members.length){
-      members=['Big','Mark','Po','Aof','Folk'];
-      await saveAllMembers();
-    }
-    render();
-    setView('kanban');
+    render(); setView('kanban');
     document.getElementById('loading').style.display='none';
     document.getElementById('app').style.display='';
   }catch(e){
-    document.getElementById('load-msg').textContent='❌ Failed to connect. '+e.message;
+    document.getElementById('load-msg').textContent='❌ Failed: '+e.message;
+    console.error(e);
   }
 })();
 </script>
