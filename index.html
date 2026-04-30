@@ -102,8 +102,9 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <div id="sync-status"><span class="dot ok" id="sync-dot"></span><span id="sync-text">Synced</span></div>
       <div id="online-avatars" style="display:flex;align-items:center;gap:4px;"></div>
-      <button onclick="openMembers()" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">👥 Team</button>
-      <button onclick="openProjects()" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">📁 Projects</button>
+      <div id="readonly-badge" style="display:none;background:#FEF9C3;color:#CA8A04;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;">👁️ View Only</div>
+      <button onclick="openMembers()" id="btn-members" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">👥 Team</button>
+      <button onclick="openProjects()" id="btn-projects" style="background:#F3F4F6;color:#374151;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">📁 Projects</button>
       <button id="btn-new" onclick="openNew()">+ New Task</button>
       <button onclick="logout()" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;">🚪 Logout</button>
     </div>
@@ -205,7 +206,7 @@ const PRC=['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#8B5CF6','#14B8A6'
 let db,tasks=[],members=[],projects=[],view='kanban';
 let editingId=null,selectedId=null,draggingId=null,pendingMembers=[],pendingProjects=[];
 let fA='All Assignees',fP='All Priorities',fPr='All Projects';
-let currentUser=null,presenceChannel=null,onlineUsers={};
+let currentUser=null,isReadOnly=false,presenceChannel=null,onlineUsers={};
 
 // ── Load Supabase with multiple CDN fallbacks ─────────────────────────────────
 function loadSupabase(cdns, i, cb) {
@@ -269,15 +270,18 @@ async function logout() {
 
 async function bootApp(session) {
   const email = session.user.email.toLowerCase();
-  if(!WHITELIST[email]) {
-    await db.auth.signOut();
-    showError('"'+email+'" ไม่มีสิทธิ์เข้าใช้งาน กรุณาติดต่อ Admin');
-    return;
+  if(WHITELIST[email]) {
+    currentUser = WHITELIST[email];
+    isReadOnly = false;
+  } else {
+    // ไม่อยู่ใน Whitelist → อ่านได้อย่างเดียว
+    const nameFromEmail = email.split('@')[0];
+    currentUser = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
+    isReadOnly = true;
   }
-  currentUser = WHITELIST[email];
   try {
     await loadAll();
-    if(!members.includes(currentUser)) {
+    if(!isReadOnly && !members.includes(currentUser)) {
       await upsertMember(currentUser);
       members.push(currentUser);
     }
@@ -299,6 +303,12 @@ function showApp() {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.body.classList.add('app-mode');
+  // ซ่อน/แสดงปุ่มตาม permission
+  const ro = isReadOnly;
+  document.getElementById('btn-new').style.display = ro ? 'none' : '';
+  document.getElementById('btn-members').style.display = ro ? 'none' : '';
+  document.getElementById('btn-projects').style.display = ro ? 'none' : '';
+  document.getElementById('readonly-badge').style.display = ro ? '' : 'none';
 }
 function showError(msg) {
   var el=document.getElementById('login-error');
