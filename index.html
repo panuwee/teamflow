@@ -74,10 +74,11 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
   <div class="spinner"></div>
   <div style="font-size:15px;font-weight:700;color:#6366F1;">Loading TeamFlow…</div>
   <div id="load-msg" style="font-size:13px;color:#9CA3AF;"></div>
+  <div id="load-debug" style="font-size:11px;color:#EF4444;margin-top:8px;max-width:400px;text-align:center;display:none;"></div>
 </div>
 
 <!-- Login Screen -->
-<div id="screen-login" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#EEF2FF,#FDF4FF,#FFF7ED);z-index:500;align-items:center;justify-content:center;" class="overlay">
+<div id="screen-login" style="position:fixed;inset:0;background:linear-gradient(135deg,#EEF2FF,#FDF4FF,#FFF7ED);z-index:500;" class="overlay">
   <div class="modal" style="max-width:400px;text-align:center;">
     <div style="font-size:48px;margin-bottom:12px;">🎯</div>
     <h2 style="margin-bottom:8px;">TeamFlow</h2>
@@ -286,7 +287,8 @@ function showLoginError(msg) {
 
 function showLoginScreen() {
   document.getElementById('loading').style.display = 'none';
-  document.getElementById('screen-login').classList.add('open');
+  const el = document.getElementById('screen-login');
+  el.style.display = 'flex';   // ← override inline style โดยตรง แทน class
 }
 
 // ── SUPABASE DATA API ─────────────────────────────────────────────────────────
@@ -679,6 +681,14 @@ function saveProjects(){
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
+// Safety timeout — ถ้าโหลดนานเกิน 8 วินาที ให้แสดงหน้า login แทน
+setTimeout(()=>{
+  if(document.getElementById('loading').style.display !== 'none'){
+    console.warn('Boot timeout — forcing login screen');
+    showLoginScreen();
+  }
+}, 8000);
+
 (async()=>{
   document.getElementById('load-msg').textContent='Checking session…';
   try{
@@ -720,8 +730,12 @@ function saveProjects(){
     initPresence();
 
   }catch(e){
-    document.getElementById('load-msg').textContent='❌ Error: '+e.message;
-    console.error(e);
+    console.error('Boot error:', e);
+    const dbg = document.getElementById('load-debug');
+    dbg.style.display = '';
+    dbg.textContent = 'Error: ' + e.message;
+    // ถ้า error → แสดงหน้า login แทนค้างหน้าขาว
+    setTimeout(()=>showLoginScreen(), 2000);
   }
 })();
 </script>
