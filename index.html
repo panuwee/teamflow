@@ -344,6 +344,10 @@ setInterval(async()=>{ if(document.hidden||!currentUser) return; await loadAll()
 
 // ── PRESENCE ──────────────────────────────────────────────────────────────────
 function initPresence(){
+  // แสดงชื่อตัวเองทันทีก่อน
+  onlineUsers[currentUser]=true;
+  renderOnline();
+
   if(presenceChannel) presenceChannel.unsubscribe();
   presenceChannel=db.channel('online-users',{config:{presence:{key:currentUser}}});
   presenceChannel
@@ -455,7 +459,7 @@ function setView(v){
 
 async function dropCard(status,col){
   col.classList.remove('drag-over');
-  if(!draggingId) return;
+  if(!draggingId||isReadOnly) return;
   const t=tasks.find(x=>x.id==draggingId);
   if(t&&t.status!==status){t.status=status;render();await upsertTask(t);}
   draggingId=null;
@@ -475,7 +479,9 @@ function renderDetail(t){
   document.getElementById('detail-pic').innerHTML=t.created_by?`<div style="display:flex;align-items:center;gap:6px;">${av(t.created_by,24)}<span style="font-size:13px;color:#374151;">${t.created_by}</span></div>`:`<span style="font-size:13px;color:#9CA3AF;">—</span>`;
   document.getElementById('detail-project').textContent=t.project||'—';
   document.getElementById('comment-header').textContent=`💬 Comments (${(t.comments||[]).length})`;
-  document.getElementById('detail-actions').innerHTML=`<button class="btn-s" style="font-size:13px;padding:7px 18px;" onclick="openEdit('${t.id}')">✏️ Edit</button><div id="del-wrap"><button class="btn-d" onclick="showDel('${t.id}')">🗑️ Delete</button></div>`;
+  // ซ่อนปุ่ม Edit/Delete ถ้าเป็น read-only
+  document.getElementById('detail-actions').innerHTML = isReadOnly ? '' :
+    `<button class="btn-s" style="font-size:13px;padding:7px 18px;" onclick="openEdit('${t.id}')">✏️ Edit</button><div id="del-wrap"><button class="btn-d" onclick="showDel('${t.id}')">🗑️ Delete</button></div>`;
   document.getElementById('detail-comments').innerHTML=(t.comments||[]).map(c=>`<div class="cb">${av(c.author,26)}<div class="cb-body"><div style="font-size:11px;font-weight:700;color:#374151;">${c.author} <span style="font-weight:400;color:#9CA3AF;">${c.time}</span></div><div style="font-size:13px;color:#4B5563;margin-top:2px;">${c.text}</div></div></div>`).join('');
 }
 function showDel(id){
@@ -513,6 +519,7 @@ function openEdit(id){
   openModal('modal-task');
 }
 async function submitTask(){
+  if(isReadOnly) return;
   const title=document.getElementById('tf-title').value.trim();
   if(!title){alert('Please enter a task title.');return;}
   const td={id:editingId||Date.now().toString(),title,project:document.getElementById('tf-project').value,status:document.getElementById('tf-status').value,priority:document.getElementById('tf-priority').value,assignee:document.getElementById('tf-assignee').value,due:document.getElementById('tf-due').value||null,description:document.getElementById('tf-desc').value,comments:editingId?(tasks.find(t=>t.id==editingId)||{}).comments||[]:[],created_by:editingId?(tasks.find(t=>t.id==editingId)||{}).created_by||currentUser:currentUser};
