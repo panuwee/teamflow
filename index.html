@@ -149,7 +149,7 @@ tr:hover td{background:#F9FAFB;cursor:pointer;}
     <h2 id="task-modal-title">➕ New Task</h2>
     <div class="field"><label>Title *</label><input id="tf-title" placeholder="Task title"/></div>
     <div class="field"><label>Project</label><select id="tf-project"></select></div>
-    <div class="field"><label>Status</label><select id="tf-status"><option>To Do</option><option>In Progress</option><option>Review</option><option>Done</option></select></div>
+    <div class="field"><label>Status</label><select id="tf-status"><option>To Do</option><option>In Progress</option><option>Review</option><option>Done</option><option>Cancelled</option></select></div>
     <div class="field"><label>Priority</label><select id="tf-priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
     <div class="field"><label>Assignee</label><select id="tf-assignee"></select></div>
     <div class="field"><label>Due Date</label><input type="date" id="tf-due"/></div>
@@ -192,8 +192,8 @@ const WHITELIST={
   'sasin.cha@garena.com':'Gear','fco.rittichai@garena.com':'Boss',
   'fco.thanatbhum@garena.com':'Magnate','fco.punyakon@garena.com':'Real'
 };
-const STATUSES=['To Do','In Progress','Review','Done'];
-const SC={'To Do':{bg:'#EEF2FF',border:'#818CF8',text:'#4F46E5',dot:'#818CF8'},'In Progress':{bg:'#FFF7ED',border:'#FB923C',text:'#EA580C',dot:'#FB923C'},Review:{bg:'#FDF4FF',border:'#C084FC',text:'#9333EA',dot:'#C084FC'},Done:{bg:'#F0FDF4',border:'#4ADE80',text:'#16A34A',dot:'#4ADE80'}};
+const STATUSES=['To Do','In Progress','Review','Done','Cancelled'];
+const SC={'To Do':{bg:'#EEF2FF',border:'#818CF8',text:'#4F46E5',dot:'#818CF8'},'In Progress':{bg:'#FFF7ED',border:'#FB923C',text:'#EA580C',dot:'#FB923C'},Review:{bg:'#FDF4FF',border:'#C084FC',text:'#9333EA',dot:'#C084FC'},Done:{bg:'#F0FDF4',border:'#4ADE80',text:'#16A34A',dot:'#4ADE80'},Cancelled:{bg:'#F3F4F6',border:'#9CA3AF',text:'#6B7280',dot:'#9CA3AF'}};
 const PC={High:{bg:'#FEE2E2',text:'#DC2626'},Medium:{bg:'#FEF9C3',text:'#CA8A04'},Low:{bg:'#DCFCE7',text:'#16A34A'}};
 const AV=['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#EF4444','#8B5CF6','#14B8A6'];
 const PRC=['#6366F1','#EC4899','#F59E0B','#10B981','#3B82F6','#8B5CF6','#14B8A6','#EF4444'];
@@ -202,37 +202,30 @@ let db,tasks=[],members=[],projects=[],view='kanban';
 let editingId=null,selectedId=null,draggingId=null,pendingMembers=[],pendingProjects=[];
 let fA='All Assignees',fP='All Priorities',fPr='All Projects';
 let currentUser=null,isReadOnly=false,presenceChannel=null,onlineUsers={};
-let booting=false; // FIX #3: guard for race
+let booting=false;
 
-// FIX #5: HTML escape helper to prevent XSS in user-supplied content
 function esc(s){
   if(s==null) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// Load Supabase with multiple CDN fallbacks
-function loadSupabase(cdns, i, cb) {
-  if(i>=cdns.length){ cb(new Error('All CDNs failed')); return; }
+function loadSupabase(cdns,i,cb){
+  if(i>=cdns.length){cb(new Error('All CDNs failed'));return;}
   var s=document.createElement('script');
   s.src=cdns[i];
-  s.onload=function(){ cb(null); };
-  s.onerror=function(){ loadSupabase(cdns,i+1,cb); };
+  s.onload=function(){cb(null);};
+  s.onerror=function(){loadSupabase(cdns,i+1,cb);};
   document.head.appendChild(s);
 }
 
 loadSupabase([
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js',
   'https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js',
-], 0, function(err) {
+],0,function(err){
   const btn=document.getElementById('google-btn');
   const btnText=document.getElementById('google-btn-text');
-  if(err) {
-    showError('โหลด Supabase ไม่ได้ กรุณาเช็ค Internet');
-    btn.disabled=true;
-    btnText.textContent='Login with Google';
-    return;
-  }
-  db = supabase.createClient(
+  if(err){showError('โหลด Supabase ไม่ได้ กรุณาเช็ค Internet');btn.disabled=true;btnText.textContent='Login with Google';return;}
+  db=supabase.createClient(
     'https://hdruqpgbbnvuawbbztfn.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkcnVxcGdiYm52dWF3YmJ6dGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Mjk3OTQsImV4cCI6MjA5MzEwNTc5NH0.4_6mJgWQvbB8N8iTawqFm-LXs5IF_j8OzZstriQ7GFM'
   );
@@ -241,173 +234,126 @@ loadSupabase([
   initAuth();
 });
 
-// AUTH
-function initAuth() {
-  db.auth.onAuthStateChange(function(event, session) {
-    if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED') && session && !currentUser && !booting) {
-      bootApp(session);
-    }
-    if(event==='SIGNED_OUT') { currentUser=null; booting=false; showLogin(); }
+function initAuth(){
+  db.auth.onAuthStateChange(function(event,session){
+    if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED')&&session&&!currentUser&&!booting){bootApp(session);}
+    if(event==='SIGNED_OUT'){currentUser=null;booting=false;showLogin();}
   });
-  db.auth.getSession().then(function(res) {
-    var session = res.data && res.data.session;
-    if(session && !currentUser && !booting) bootApp(session);
+  db.auth.getSession().then(function(res){
+    var session=res.data&&res.data.session;
+    if(session&&!currentUser&&!booting) bootApp(session);
   });
 }
 
-function loginWithGoogle() {
-  if(!db){ alert('กรุณารอสักครู่ กำลังโหลด…'); return; }
+function loginWithGoogle(){
+  if(!db){alert('กรุณารอสักครู่ กำลังโหลด…');return;}
   document.getElementById('google-btn-text').textContent='⏳ กำลัง redirect…';
-  // FIX #6: dynamic redirect URL — works on any deploy
   db.auth.signInWithOAuth({
     provider:'google',
-    options:{
-      redirectTo: window.location.origin + window.location.pathname,
-      queryParams:{hd:'garena.com'}
-    }
-  }).then(function(res){
-    if(res.error) showError(res.error.message);
-  });
+    options:{redirectTo:window.location.origin+window.location.pathname,queryParams:{hd:'garena.com'}}
+  }).then(function(res){if(res.error) showError(res.error.message);});
 }
 
-async function logout() {
+async function logout(){
   if(!confirm('ต้องการ Logout ไหมครับ?')) return;
-  if(presenceChannel){ try{await presenceChannel.unsubscribe();}catch(e){} presenceChannel=null; }
+  if(presenceChannel){try{await presenceChannel.unsubscribe();}catch(e){} presenceChannel=null;}
   await db.auth.signOut();
 }
 
-async function bootApp(session) {
+async function bootApp(session){
   if(booting||currentUser) return;
   booting=true;
   try{
-    const email = session.user.email.toLowerCase();
-    if(WHITELIST[email]) {
-      currentUser = WHITELIST[email];
-      isReadOnly = false;
-    } else {
-      const nameFromEmail = email.split('@')[0];
-      currentUser = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
-      isReadOnly = true;
-    }
+    const email=session.user.email.toLowerCase();
+    if(WHITELIST[email]){currentUser=WHITELIST[email];isReadOnly=false;}
+    else{const n=email.split('@')[0];currentUser=n.charAt(0).toUpperCase()+n.slice(1);isReadOnly=true;}
     await loadAll();
-    if(!isReadOnly && !members.includes(currentUser)) {
-      try{
-        await upsertMember(currentUser);
-        members.push(currentUser);
-      }catch(e){console.warn('upsert self member failed:',e);}
+    if(!isReadOnly&&!members.includes(currentUser)){
+      try{await upsertMember(currentUser);members.push(currentUser);}catch(e){console.warn(e);}
     }
-    showApp();
-    render(); setView('kanban');
-    initPresence();
-  } catch(e) {
-    console.error(e);
-    showError('โหลดข้อมูลไม่ได้: '+(e.message||e));
-    currentUser=null;
-  } finally {
-    booting=false;
-  }
+    showApp();render();setView('kanban');initPresence();
+  }catch(e){console.error(e);showError('โหลดข้อมูลไม่ได้: '+(e.message||e));currentUser=null;}
+  finally{booting=false;}
 }
 
-function showLogin() {
+function showLogin(){
   document.getElementById('login-screen').style.display='';
   document.getElementById('app').style.display='none';
   document.body.classList.remove('app-mode');
   document.getElementById('google-btn-text').textContent='Login with Google';
   document.getElementById('login-error').style.display='none';
 }
-function showApp() {
+function showApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.body.classList.add('app-mode');
-  const ro = isReadOnly;
-  document.getElementById('btn-new').style.display = ro ? 'none' : '';
-  document.getElementById('btn-members').style.display = ro ? 'none' : '';
-  document.getElementById('btn-projects').style.display = ro ? 'none' : '';
-  document.getElementById('readonly-badge').style.display = ro ? '' : 'none';
+  const ro=isReadOnly;
+  document.getElementById('btn-new').style.display=ro?'none':'';
+  document.getElementById('btn-members').style.display=ro?'none':'';
+  document.getElementById('btn-projects').style.display=ro?'none':'';
+  document.getElementById('readonly-badge').style.display=ro?'':'none';
 }
-function showError(msg) {
-  var el=document.getElementById('login-error');
-  el.textContent='❌ '+msg; el.style.display='';
-}
+function showError(msg){var el=document.getElementById('login-error');el.textContent='❌ '+msg;el.style.display='';}
 
-// DATA
 async function loadAll(){
   setSyncing(true);
   try{
-    // FIX #2: Run queries independently — projects table failure must not crash the app
-    const [tasksRes, membersRes, projectsRes] = await Promise.allSettled([
+    const [tasksRes,membersRes,projectsRes]=await Promise.allSettled([
       db.from('tasks').select('*').order('updated_at',{ascending:true}),
       db.from('members').select('*').order('id',{ascending:true}),
       db.from('projects').select('*').order('id',{ascending:true}),
     ]);
-
-    if(tasksRes.status==='rejected' || tasksRes.value.error) throw (tasksRes.value?.error || tasksRes.reason);
-    if(membersRes.status==='rejected' || membersRes.value.error) throw (membersRes.value?.error || membersRes.reason);
-
-    const td = tasksRes.value.data || [];
-    const md = membersRes.value.data || [];
-    // projects table is optional — fall back gracefully
-    const pd = (projectsRes.status==='fulfilled' && !projectsRes.value.error) ? (projectsRes.value.data||[]) : [];
-
+    if(tasksRes.status==='rejected'||tasksRes.value.error) throw(tasksRes.value?.error||tasksRes.reason);
+    if(membersRes.status==='rejected'||membersRes.value.error) throw(membersRes.value?.error||membersRes.reason);
+    const td=tasksRes.value.data||[];
+    const md=membersRes.value.data||[];
+    const pd=(projectsRes.status==='fulfilled'&&!projectsRes.value.error)?(projectsRes.value.data||[]):[];
     tasks=td.map(t=>({...t,comments:t.comments||[]}));
     members=md.map(m=>m.name);
-
-    const ps = new Set();
+    const ps=new Set();
     pd.forEach(p=>ps.add(p.name));
-    tasks.forEach(t=>{ if(t.project) ps.add(t.project); });
-    projects = ps.size ? [...ps] : ['Operation','Design'];
-
+    tasks.forEach(t=>{if(t.project) ps.add(t.project);});
+    projects=ps.size?[...ps]:['Operation','Design'];
     setSyncing(false,'Synced');
-  }catch(e){
-    setSyncing(false,'Error');
-    throw e;
-  }
+  }catch(e){setSyncing(false,'Error');throw e;}
 }
+
 async function upsertTask(t){
   setSyncing(true,'Saving…');
-  const {error} = await db.from('tasks').upsert({...t,updated_at:new Date().toISOString()});
-  if(error){ setSyncing(false,'Save failed'); console.error(error); return; }
-  setSyncing(false,'Saved ✓');
-  setTimeout(()=>setSyncing(false,'Synced'),2000);
+  const {error}=await db.from('tasks').upsert({...t,updated_at:new Date().toISOString()});
+  if(error){setSyncing(false,'Save failed');console.error(error);return;}
+  setSyncing(false,'Saved ✓');setTimeout(()=>setSyncing(false,'Synced'),2000);
 }
-async function deleteTaskDB(id){ await db.from('tasks').delete().eq('id',id); }
-async function upsertProject(name){ try{await db.from('projects').upsert({name},{onConflict:'name'});}catch(e){console.warn('projects table missing?',e);} }
-async function deleteProjectDB(name){ try{await db.from('projects').delete().eq('name',name);}catch(e){console.warn(e);} }
-async function upsertMember(name){ const {error}=await db.from('members').upsert({name},{onConflict:'name'}); if(error) throw error; }
-async function deleteMemberDB(name){ await db.from('members').delete().eq('name',name); }
+async function deleteTaskDB(id){await db.from('tasks').delete().eq('id',id);}
+async function upsertProject(name){try{await db.from('projects').upsert({name},{onConflict:'name'});}catch(e){console.warn(e);}}
+async function deleteProjectDB(name){try{await db.from('projects').delete().eq('name',name);}catch(e){console.warn(e);}}
+async function upsertMember(name){const {error}=await db.from('members').upsert({name},{onConflict:'name'});if(error) throw error;}
+async function deleteMemberDB(name){await db.from('members').delete().eq('name',name);}
 
-// FIX #7: Skip auto-refresh while a modal is open or input focused — don't clobber user state
 setInterval(async()=>{
   if(document.hidden||!currentUser) return;
   if(document.querySelector('.overlay.open')) return;
-  const ae = document.activeElement;
-  if(ae && (ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT')) return;
-  try{ await loadAll(); render(); }catch(e){ console.warn('auto-refresh failed',e); }
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT')) return;
+  try{await loadAll();render();}catch(e){console.warn('auto-refresh failed',e);}
 },30000);
 
-// PRESENCE
 function initPresence(){
-  if(presenceChannel){ try{presenceChannel.unsubscribe();}catch(e){} }
-
-  presenceChannel = db.channel('teamflow-presence');
-
+  if(presenceChannel){try{presenceChannel.unsubscribe();}catch(e){}}
+  onlineUsers[currentUser]=true;renderOnline();
+  presenceChannel=db.channel('teamflow-presence');
   presenceChannel
-    .on('presence', {event:'sync'}, () => {
-      const state = presenceChannel.presenceState();
-      const next = {};
-      Object.values(state).forEach(presences => {
-        presences.forEach(p => { if(p.user) next[p.user] = true; });
-      });
-      onlineUsers = next;
-      renderOnline();
+    .on('presence',{event:'sync'},()=>{
+      const state=presenceChannel.presenceState();
+      const next={};
+      Object.values(state).forEach(presences=>{presences.forEach(p=>{if(p.user) next[p.user]=true;});});
+      onlineUsers=next;renderOnline();
     })
-    .subscribe(async status => {
-      if(status === 'SUBSCRIBED') {
-        await presenceChannel.track({ user: currentUser, at: Date.now() });
-      }
+    .subscribe(async status=>{
+      if(status==='SUBSCRIBED') await presenceChannel.track({user:currentUser,at:Date.now()});
     });
 }
-// FIX #8: don't show currentUser twice — exclude self from avatar list, keep badge
+
 function renderOnline(){
   const ol=Object.keys(onlineUsers).filter(u=>u!==currentUser);
   document.getElementById('online-avatars').innerHTML=
@@ -416,26 +362,14 @@ function renderOnline(){
     `<span style="font-size:11px;color:#6366F1;font-weight:600;background:#EEF2FF;padding:3px 8px;border-radius:20px;">${esc(currentUser)}</span>`;
 }
 
-// HELPERS
-function setSyncing(on,msg=''){
-  document.getElementById('sync-dot').className='dot '+(on?'syncing':'ok');
-  document.getElementById('sync-text').textContent=msg||(on?'Syncing…':'Synced');
-}
+function setSyncing(on,msg=''){document.getElementById('sync-dot').className='dot '+(on?'syncing':'ok');document.getElementById('sync-text').textContent=msg||(on?'Syncing…':'Synced');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function openModal(id){document.getElementById(id).classList.add('open');}
-function av(name,size=28){
-  const i=name?name.charCodeAt(0)%AV.length:0;
-  const initial=name?esc(name[0].toUpperCase()):'?';
-  return `<div class="avatar" style="width:${size}px;height:${size}px;background:${AV[i]};font-size:${Math.round(size*.38)}px;">${initial}</div>`;
-}
-function ring(pct,color,size=44){
-  const r=(size-6)/2,c=2*Math.PI*r,d=(pct/100)*c;
-  return `<svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#E5E7EB" stroke-width="5"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="5" stroke-dasharray="${d} ${c-d}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})"/><text x="${size/2}" y="${size/2+4}" text-anchor="middle" font-size="10" font-weight="700" fill="${color}">${pct}%</text></svg>`;
-}
-function filtered(){ return tasks.filter(t=>(fA==='All Assignees'||t.assignee===fA)&&(fP==='All Priorities'||t.priority===fP)&&(fPr==='All Projects'||t.project===fPr)); }
+function av(name,size=28){const i=name?name.charCodeAt(0)%AV.length:0;return `<div class="avatar" style="width:${size}px;height:${size}px;background:${AV[i]};font-size:${Math.round(size*.38)}px;">${name?esc(name[0].toUpperCase()):'?'}</div>`;}
+function ring(pct,color,size=44){const r=(size-6)/2,c=2*Math.PI*r,d=(pct/100)*c;return `<svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#E5E7EB" stroke-width="5"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="5" stroke-dasharray="${d} ${c-d}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})"/><text x="${size/2}" y="${size/2+4}" text-anchor="middle" font-size="10" font-weight="700" fill="${color}">${pct}%</text></svg>`;}
+function filtered(){return tasks.filter(t=>(fA==='All Assignees'||t.assignee===fA)&&(fP==='All Priorities'||t.priority===fP)&&(fPr==='All Projects'||t.project===fPr));}
 
-// RENDER
-function render(){ renderDash(); renderFilters(); renderKanban(); renderList(); }
+function render(){renderDash();renderFilters();renderKanban();renderList();}
 
 function renderDash(){
   const done=tasks.filter(t=>t.status==='Done').length,total=tasks.length,pct=total?Math.round(done/total*100):0;
@@ -452,26 +386,20 @@ function renderFilters(){
   fa.value=va;fp.value=vp;
 }
 function applyFilter(){
-  fA=document.getElementById('f-assignee').value;
-  fP=document.getElementById('f-priority').value;
-  fPr=document.getElementById('f-project').value;
+  fA=document.getElementById('f-assignee').value;fP=document.getElementById('f-priority').value;fPr=document.getElementById('f-project').value;
   document.getElementById('btn-clear').style.display=(fA!=='All Assignees'||fP!=='All Priorities'||fPr!=='All Projects')?'':'none';
   renderKanban();renderList();
 }
 function clearFilter(){
   fA='All Assignees';fP='All Priorities';fPr='All Projects';
-  document.getElementById('f-assignee').value=fA;
-  document.getElementById('f-priority').value=fP;
-  document.getElementById('f-project').value=fPr;
-  document.getElementById('btn-clear').style.display='none';
-  renderKanban();renderList();
+  document.getElementById('f-assignee').value=fA;document.getElementById('f-priority').value=fP;document.getElementById('f-project').value=fPr;
+  document.getElementById('btn-clear').style.display='none';renderKanban();renderList();
 }
 
 function cardHTML(t){
   const s=SC[t.status]||SC['To Do'],p=PC[t.priority]||PC.Medium;
   const today=new Date().toISOString().slice(0,10),ov=t.due&&t.due<today&&t.status!=='Done';
-  const draggable = isReadOnly ? 'false' : 'true';
-  return `<div class="card" draggable="${draggable}" style="border-left-color:${s.border};" ondragstart="draggingId='${esc(t.id)}'" onclick="openDetail('${esc(t.id)}')">
+  return `<div class="card" draggable="${isReadOnly?'false':'true'}" style="border-left-color:${s.border};" ondragstart="draggingId='${esc(t.id)}'" onclick="openDetail('${esc(t.id)}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;"><span class="card-title">${esc(t.title)}</span><span class="badge" style="background:${p.bg};color:${p.text};">${esc(t.priority)}</span></div>
     <div class="card-project">${esc(t.project)}</div>
     <div class="card-footer"><div style="display:flex;align-items:center;gap:5px;">${av(t.assignee,22)}<span style="font-size:11px;color:#6B7280;">${esc(t.assignee)}</span></div>
@@ -490,8 +418,7 @@ function renderKanban(){
 function renderList(){
   const today=new Date().toISOString().slice(0,10);
   document.getElementById('list-view').innerHTML=projects.map((proj,pi)=>{
-    const pt=filtered().filter(t=>t.project===proj);
-    if(!pt.length) return '';
+    const pt=filtered().filter(t=>t.project===proj);if(!pt.length) return '';
     return `<div class="list-group"><div class="list-hdr" style="background:linear-gradient(90deg,${PRC[pi%PRC.length]},${PRC[(pi+1)%PRC.length]});">${esc(proj)} <span style="opacity:.8;font-size:12px;">${pt.length} tasks</span></div>
     <table><thead><tr><th>TASK</th><th>STATUS</th><th>PRIORITY</th><th>ASSIGNEE</th><th>DUE</th><th>COMMENTS</th></tr></thead><tbody>
     ${pt.map(t=>{const s=SC[t.status]||SC['To Do'],p=PC[t.priority]||PC.Medium,ov=t.due&&t.due<today&&t.status!=='Done';
@@ -516,11 +443,7 @@ async function dropCard(status,col){
   draggingId=null;
 }
 
-function openDetail(id){
-  selectedId=id;
-  const t=tasks.find(x=>String(x.id)===String(id));if(!t) return;
-  renderDetail(t);openModal('modal-detail');
-}
+function openDetail(id){selectedId=id;const t=tasks.find(x=>String(x.id)===String(id));if(!t) return;renderDetail(t);openModal('modal-detail');}
 function renderDetail(t){
   const s=SC[t.status]||SC['To Do'],p=PC[t.priority]||PC.Medium;
   document.getElementById('detail-title-wrap').innerHTML=`<h2 style="margin:0;font-size:18px;font-weight:700;color:#111827;">${esc(t.title)}</h2>`;
@@ -529,22 +452,16 @@ function renderDetail(t){
   document.getElementById('detail-due').textContent=t.due||'—';
   document.getElementById('detail-pic').innerHTML=t.created_by?`<div style="display:flex;align-items:center;gap:6px;">${av(t.created_by,24)}<span style="font-size:13px;color:#374151;">${esc(t.created_by)}</span></div>`:`<span style="font-size:13px;color:#9CA3AF;">—</span>`;
   document.getElementById('detail-project').textContent=t.project||'—';
-  // FIX #5: use textContent for description so newlines + safe rendering
   document.getElementById('detail-desc').textContent=t.description||'';
   document.getElementById('comment-header').textContent=`💬 Comments (${(t.comments||[]).length})`;
-  document.getElementById('detail-actions').innerHTML = isReadOnly ? '' :
+  document.getElementById('detail-actions').innerHTML=isReadOnly?'':
     `<button class="btn-s" style="font-size:13px;padding:7px 18px;" onclick="openEdit('${esc(t.id)}')">✏️ Edit</button><div id="del-wrap"><button class="btn-d" onclick="showDel('${esc(t.id)}')">🗑️ Delete</button></div>`;
   document.getElementById('detail-comments').innerHTML=(t.comments||[]).map(c=>`<div class="cb">${av(c.author,26)}<div class="cb-body"><div style="font-size:11px;font-weight:700;color:#374151;">${esc(c.author)} <span style="font-weight:400;color:#9CA3AF;">${esc(c.time)}</span></div><div style="font-size:13px;color:#4B5563;margin-top:2px;white-space:pre-wrap;">${esc(c.text)}</div></div></div>`).join('');
 }
 function showDel(id){
   document.getElementById('del-wrap').innerHTML=`<div style="display:flex;align-items:center;gap:8px;background:#FEF2F2;border-radius:10px;padding:8px 14px;"><span style="font-size:13px;color:#DC2626;font-weight:600;">Delete?</span><button onclick="delTask('${esc(id)}')" style="background:#DC2626;color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;">Yes</button><button onclick="renderDetail(tasks.find(x=>String(x.id)===String('${esc(id)}')))" style="background:#F3F4F6;color:#374151;border:none;border-radius:7px;padding:6px 12px;font-size:13px;cursor:pointer;">No</button></div>`;
 }
-async function delTask(id){
-  if(isReadOnly) return;
-  tasks=tasks.filter(t=>String(t.id)!==String(id));
-  closeModal('modal-detail'); render();
-  await deleteTaskDB(id);
-}
+async function delTask(id){if(isReadOnly) return;tasks=tasks.filter(t=>String(t.id)!==String(id));closeModal('modal-detail');render();await deleteTaskDB(id);}
 async function postComment(){
   const inp=document.getElementById('comment-input'),txt=inp.value.trim();if(!txt) return;
   const t=tasks.find(x=>String(x.id)===String(selectedId));if(!t) return;
@@ -553,21 +470,17 @@ async function postComment(){
 }
 
 function openNew(){
-  if(isReadOnly) return;
-  editingId=null;
+  if(isReadOnly) return;editingId=null;
   document.getElementById('task-modal-title').textContent='➕ New Task';
   document.getElementById('tf-title').value='';
   document.getElementById('tf-project').innerHTML=projects.map(p=>`<option>${esc(p)}</option>`).join('');
-  document.getElementById('tf-status').value='To Do';
-  document.getElementById('tf-priority').value='Medium';
+  document.getElementById('tf-status').value='To Do';document.getElementById('tf-priority').value='Medium';
   document.getElementById('tf-assignee').innerHTML=members.map(m=>`<option${m===currentUser?' selected':''}>${esc(m)}</option>`).join('');
-  document.getElementById('tf-due').value='';
-  document.getElementById('tf-desc').value='';
+  document.getElementById('tf-due').value='';document.getElementById('tf-desc').value='';
   openModal('modal-task');
 }
 function openEdit(id){
-  if(isReadOnly) return;
-  const t=tasks.find(x=>String(x.id)===String(id));if(!t) return;
+  if(isReadOnly) return;const t=tasks.find(x=>String(x.id)===String(id));if(!t) return;
   editingId=id;closeModal('modal-detail');
   document.getElementById('task-modal-title').textContent='✏️ Edit Task';
   document.getElementById('tf-title').value=t.title;
@@ -579,40 +492,26 @@ function openEdit(id){
 }
 async function submitTask(){
   if(isReadOnly) return;
-  const title=document.getElementById('tf-title').value.trim();
-  if(!title){alert('Please enter a task title.');return;}
-  const td={
-    id:editingId||Date.now().toString(),
-    title,
-    project:document.getElementById('tf-project').value,
-    status:document.getElementById('tf-status').value,
-    priority:document.getElementById('tf-priority').value,
-    assignee:document.getElementById('tf-assignee').value,
-    due:document.getElementById('tf-due').value||null,
-    description:document.getElementById('tf-desc').value,
-    comments:editingId?(tasks.find(t=>String(t.id)===String(editingId))||{}).comments||[]:[],
-    created_by:editingId?(tasks.find(t=>String(t.id)===String(editingId))||{}).created_by||currentUser:currentUser
-  };
+  const title=document.getElementById('tf-title').value.trim();if(!title){alert('Please enter a task title.');return;}
+  const td={id:editingId||Date.now().toString(),title,project:document.getElementById('tf-project').value,status:document.getElementById('tf-status').value,priority:document.getElementById('tf-priority').value,assignee:document.getElementById('tf-assignee').value,due:document.getElementById('tf-due').value||null,description:document.getElementById('tf-desc').value,comments:editingId?(tasks.find(t=>String(t.id)===String(editingId))||{}).comments||[]:[],created_by:editingId?(tasks.find(t=>String(t.id)===String(editingId))||{}).created_by||currentUser:currentUser};
   if(editingId){tasks=tasks.map(t=>String(t.id)===String(editingId)?td:t);}else{tasks.push(td);}
-  // FIX #4: only ADD a project if a new one was introduced — never strip empty projects
-  if(td.project && !projects.includes(td.project)) projects.push(td.project);
+  if(td.project&&!projects.includes(td.project)) projects.push(td.project);
   closeModal('modal-task');render();await upsertTask(td);
 }
 
-function openMembers(){ if(isReadOnly) return; pendingMembers=[...members];renderMembers();openModal('modal-members'); }
+function openMembers(){if(isReadOnly) return;pendingMembers=[...members];renderMembers();openModal('modal-members');}
 function renderMembers(){
   document.getElementById('members-list').innerHTML=pendingMembers.map((m,i)=>`<div style="display:flex;align-items:center;gap:10px;background:#F9FAFB;border-radius:10px;padding:10px 14px;">${av(m,32)}<span style="flex:1;font-size:14px;font-weight:600;color:#111827;">${esc(m)}</span>${pendingMembers.length>1?`<button onclick="removePM(${i})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;">Remove</button>`:''}</div>`).join('');
 }
-function addMemberInline(){ const n=document.getElementById('new-member-input').value.trim();if(!n||pendingMembers.includes(n)) return;pendingMembers.push(n);document.getElementById('new-member-input').value='';renderMembers(); }
-function removePM(i){ pendingMembers.splice(i,1);renderMembers(); }
+function addMemberInline(){const n=document.getElementById('new-member-input').value.trim();if(!n||pendingMembers.includes(n)) return;pendingMembers.push(n);document.getElementById('new-member-input').value='';renderMembers();}
+function removePM(i){pendingMembers.splice(i,1);renderMembers();}
 async function saveMembers(){
   const added=pendingMembers.filter(m=>!members.includes(m)),removed=members.filter(m=>!pendingMembers.includes(m));
   await Promise.all([...added.map(upsertMember),...removed.map(deleteMemberDB)]);
   members=[...pendingMembers];closeModal('modal-members');renderFilters();
 }
 
-function openProjects(){ if(isReadOnly) return; pendingProjects=[...projects];renderProjects();openModal('modal-projects'); }
-// FIX #1: Re-add Remove button (was missing entirely)
+function openProjects(){if(isReadOnly) return;pendingProjects=[...projects];renderProjects();openModal('modal-projects');}
 function renderProjects(){
   document.getElementById('projects-list').innerHTML=pendingProjects.map((p,i)=>{
     const cnt=tasks.filter(t=>t.project===p).length;
@@ -624,21 +523,16 @@ function renderProjects(){
     </div>`;
   }).join('');
 }
-function addProjectInline(){ const n=document.getElementById('new-project-input').value.trim();if(!n||pendingProjects.includes(n)) return;pendingProjects.push(n);document.getElementById('new-project-input').value='';renderProjects(); }
+function addProjectInline(){const n=document.getElementById('new-project-input').value.trim();if(!n||pendingProjects.includes(n)) return;pendingProjects.push(n);document.getElementById('new-project-input').value='';renderProjects();}
 function removeProject(i){
-  const p=pendingProjects[i];
-  const cnt=tasks.filter(t=>t.project===p).length;
-  if(cnt && !confirm(`"${p}" มี ${cnt} tasks อยู่\nลบ project นี้แล้ว tasks ยังคงอยู่ แต่จะไม่จัดอยู่ใน project ใด\nดำเนินการต่อ?`)) return;
-  pendingProjects.splice(i,1); renderProjects();
+  const p=pendingProjects[i],cnt=tasks.filter(t=>t.project===p).length;
+  if(cnt&&!confirm(`"${p}" มี ${cnt} tasks อยู่\nลบ project นี้แล้ว tasks ยังคงอยู่ แต่จะไม่จัดอยู่ใน project ใด\nดำเนินการต่อ?`)) return;
+  pendingProjects.splice(i,1);renderProjects();
 }
 async function saveProjects(){
   const removed=projects.filter(p=>!pendingProjects.includes(p));
-  await Promise.all([
-    ...pendingProjects.map(upsertProject),
-    ...removed.map(deleteProjectDB),
-  ]);
-  projects=[...pendingProjects];
-  closeModal('modal-projects'); render();
+  await Promise.all([...pendingProjects.map(upsertProject),...removed.map(deleteProjectDB)]);
+  projects=[...pendingProjects];closeModal('modal-projects');render();
 }
 </script>
 </body>
