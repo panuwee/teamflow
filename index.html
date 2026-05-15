@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#FFF5E1"/>
 <title>TeamFlow · FC Online Festival Ops Board</title>
 <style>
-@import url("https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800;900&family=Courier+Prime:wght@400;700&family=Caveat:wght@400;600;700&display=swap");
+/* font loaded dynamically by team config */
 
 :root{
   --lobby:#F4B6C2;
@@ -741,7 +741,7 @@ tr:hover td{background:var(--elevator);cursor:pointer}
 </head>
 <body>
 <div class="marquee">
-  <div class="marquee-track">
+  <div class="marquee-track" id="marquee-track">
     <span>TEAMFLOW OPERATIONS BOARD <span class="star">✦</span></span>
     <span>FC ONLINE CAMPAIGN CONTROL <span class="star">✦</span></span>
     <span>TASKS · STATUS · OWNERSHIP <span class="star">✦</span></span>
@@ -751,12 +751,12 @@ tr:hover td{background:var(--elevator);cursor:pointer}
     <span>FC ONLINE CAMPAIGN CONTROL <span class="star">✦</span></span>
   </div>
 </div>
-<div class="od-rail left"><span>TeamFlow - Tasks - Status - Team</span></div>
-<div class="od-rail right"><span>Open Design - Ops Board - 2026</span></div>
+<div class="od-rail left"><span id="rail-left">TeamFlow - Tasks - Status - Team</span></div>
+<div class="od-rail right"><span id="rail-right">Open Design - Ops Board - 2026</span></div>
 
 <div id="login-screen">
-  <span class="login-mark">TF</span>
-  <h2>TeamFlow</h2>
+  <span class="login-mark" id="login-mark">TF</span>
+  <h2 id="login-title">TeamFlow</h2>
   <p style="font-size:14px;margin:18px 0 4px;">Garena team operations board</p>
   <p style="font-size:12px;">เฉพาะสมาชิกทีมที่ได้รับสิทธิ์เท่านั้น · Google Account required</p>
   <button class="google-btn" id="google-btn" onclick="loginWithGoogle()" disabled>
@@ -769,10 +769,10 @@ tr:hover td{background:var(--elevator);cursor:pointer}
 <div id="app">
   <div id="header">
     <div id="logo">
-      <span class="brand-mark">TF</span>
+      <span class="brand-mark" id="brand-mark">TF</span>
       <span>
-        TeamFlow
-        <small class="brand-meta">FC Online · Gate 8 · Live Tasks</small>
+        <span id="brand-name">TeamFlow</span>
+        <small class="brand-meta" id="brand-meta">FC Online · Gate 8 · Live Tasks</small>
       </span>
     </div>
     <div style="display:flex;gap:6px;">
@@ -899,6 +899,38 @@ tr:hover td{background:var(--elevator);cursor:pointer}
 const TEAM_CONFIGS={
   default:{
     name:'Ops Team',
+    appName:'OpsFlow',
+    appMark:'OF',
+    appMeta:'FC Online · Operations · Live Tasks',
+    marquee:'OPSFLOW · OPERATIONS BOARD · FC ONLINE · TASKS · STATUS · OWNERSHIP · 2026',
+    railLeft:'OpsFlow — Tasks — Status — Team',
+    railRight:'Operations Board — 2026',
+    // Minimal Slate — bg ขาวอมเทา, accent น้ำเงินเข้ม, ตัวหนังสือชัด
+    fontImport:'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap',
+    css:{
+      '--lobby':'#DBEAFE',
+      '--concierge':'#D1FAE5',
+      '--elevator':'#FEF3C7',
+      '--bellboy':'#FFFFFF',
+      '--uniform':'#1E40AF',
+      '--ink':'#111827',
+      '--ink-soft':'#374151',
+      '--muted':'#6B7280',
+      '--soft':'#9CA3AF',
+      '--paper':'#F9FAFB',
+      '--paper-deep':'#F3F4F6',
+      '--shadow':'rgba(0,0,0,.08)',
+      '--line':'#E5E7EB',
+      '--panel':'#FFFFFF',
+      '--panel-strong':'#F3F4F6',
+      '--coral':'#BFDBFE',
+      '--coral-dark':'#1E40AF',
+      '--display':'"Inter","Segoe UI",ui-sans-serif,system-ui,sans-serif',
+      '--sans':'"Inter","Leelawadee UI",sans-serif',
+      '--mono':'"Inter","Segoe UI",sans-serif',
+      '--hand':'"Inter",sans-serif',
+      '--r':'6px'
+    },
     url:'https://hdruqpgbbnvuawbbztfn.supabase.co',
     key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkcnVxcGdiYm52dWF3YmJ6dGZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1Mjk3OTQsImV4cCI6MjA5MzEwNTc5NH0.4_6mJgWQvbB8N8iTawqFm-LXs5IF_j8OzZstriQ7GFM',
     whitelist:{
@@ -909,6 +941,38 @@ const TEAM_CONFIGS={
   },
   mkt:{
     name:'MKT Team',
+    appName:'MKT Board',
+    appMark:'MK',
+    appMeta:'Marketing · Campaign · Live Tasks',
+    marquee:'MKT BOARD · MARKETING OPERATIONS · CAMPAIGN CONTROL · TASKS · STATUS · TEAM · 2026',
+    railLeft:'MKT Board — Tasks — Status — Team',
+    railRight:'Marketing Board — 2026',
+    // Minimal Warm — bg ขาวอมครีม, accent เขียวเข้ม, ตัวหนังสือชัด
+    fontImport:'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap',
+    css:{
+      '--lobby':'#D1FAE5',
+      '--concierge':'#DBEAFE',
+      '--elevator':'#FEF9C3',
+      '--bellboy':'#FFFFFF',
+      '--uniform':'#065F46',
+      '--ink':'#111827',
+      '--ink-soft':'#374151',
+      '--muted':'#6B7280',
+      '--soft':'#9CA3AF',
+      '--paper':'#FAFAFA',
+      '--paper-deep':'#F3F4F6',
+      '--shadow':'rgba(0,0,0,.08)',
+      '--line':'#E5E7EB',
+      '--panel':'#FFFFFF',
+      '--panel-strong':'#F3F4F6',
+      '--coral':'#A7F3D0',
+      '--coral-dark':'#065F46',
+      '--display':'"Inter","Segoe UI",ui-sans-serif,system-ui,sans-serif',
+      '--sans':'"Inter","Leelawadee UI",sans-serif',
+      '--mono':'"Inter","Segoe UI",sans-serif',
+      '--hand':'"Inter",sans-serif',
+      '--r':'6px'
+    },
     url:'https://xsxowtpbhwimvbaeqkhg.supabase.co',
     key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzeG93dHBiaHdpbXZiYWVxa2hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4Mzg3NDcsImV4cCI6MjA5NDQxNDc0N30.6KG00hrVcOC1T00oVuU6SkYcwuzxFMgQVZsT_4JQaac',
     whitelist:{
@@ -924,7 +988,37 @@ const TEAM_CONFIGS={
 const _t=new URLSearchParams(window.location.search).get('team')||'default';
 const _cfg=TEAM_CONFIGS[_t]||TEAM_CONFIGS['default'];
 const WHITELIST=_cfg.whitelist;
-document.title=_cfg.name;
+document.title=_cfg.appName||_cfg.name;
+
+// ── Apply Theme ───────────────────────────────────────────
+(function applyTheme(){
+  // Font
+  var lk=document.createElement('link');
+  lk.rel='stylesheet'; lk.href=_cfg.fontImport;
+  document.head.appendChild(lk);
+  // CSS Variables
+  var root=document.documentElement.style;
+  Object.entries(_cfg.css).forEach(function(e){ root.setProperty(e[0],e[1]); });
+  // Header app name + mark
+  var mark=document.getElementById('brand-mark');
+  var nameEl=document.getElementById('brand-name');
+  var metaEl=document.getElementById('brand-meta');
+  var loginMark=document.getElementById('login-mark');
+  var loginTitle=document.getElementById('login-title');
+  if(mark) mark.textContent=_cfg.appMark;
+  if(nameEl) nameEl.textContent=_cfg.appName;
+  if(metaEl) metaEl.textContent=_cfg.appMeta;
+  if(loginMark) loginMark.textContent=_cfg.appMark;
+  if(loginTitle) loginTitle.textContent=_cfg.appName;
+  // Marquee
+  var mt=document.getElementById('marquee-track');
+  if(mt) mt.innerHTML='<span>'+_cfg.marquee+'</span><span>'+_cfg.marquee+'</span>';
+  // Rails
+  var rl=document.getElementById('rail-left');
+  var rr=document.getElementById('rail-right');
+  if(rl) rl.textContent=_cfg.railLeft;
+  if(rr) rr.textContent=_cfg.railRight;
+})();
 const STATUSES=['To Do','In Progress','Review','Done','Cancelled'];
 const SC={'To Do':{bg:'#FFF5E1',border:'#2C3E6B',text:'#2C3E6B',dot:'#F2C94C'},'In Progress':{bg:'#FFF2BC',border:'#F2C94C',text:'#8A6312',dot:'#F2C94C'},Review:{bg:'#FBE1E8',border:'#F4B6C2',text:'#9B4B62',dot:'#F4B6C2'},Done:{bg:'#E4F2E8',border:'#A8D5BA',text:'#2F7350',dot:'#A8D5BA'},Cancelled:{bg:'#F5E6C8',border:'#3a3f5e',text:'#3a3f5e',dot:'#3a3f5e'}};
 const PC={High:{bg:'#F4B6C2',text:'#1a1d3a'},Medium:{bg:'#F2C94C',text:'#1a1d3a'},Low:{bg:'#A8D5BA',text:'#1a1d3a'}};
