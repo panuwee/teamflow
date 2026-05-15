@@ -1081,6 +1081,14 @@ loadSupabase([
 });
 
 function initAuth(){
+  // ถ้า URL มี #access_token (OAuth callback) และไม่มี ?team= → เช็ค localStorage แล้ว redirect
+  if(window.location.hash&&window.location.hash.includes('access_token')){
+    var savedTeam=localStorage.getItem('tf_team');
+    if(savedTeam&&savedTeam!=='default'&&!window.location.search.includes('team=')){
+      var newUrl=window.location.origin+window.location.pathname+'?team='+savedTeam+window.location.hash;
+      window.history.replaceState(null,'',newUrl);
+    }
+  }
   db.auth.onAuthStateChange(function(event,session){
     if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED')&&session&&!currentUser&&!booting){bootApp(session);}
     if(event==='SIGNED_OUT'){currentUser=null;booting=false;showLogin();}
@@ -1094,6 +1102,7 @@ function initAuth(){
 function loginWithGoogle(){
   if(!db){alert('กรุณารอสักครู่ กำลังโหลด...');return;}
   document.getElementById('google-btn-text').textContent='กำลัง redirect...';
+  localStorage.setItem('tf_team',_t);
   db.auth.signInWithOAuth({
     provider:'google',
     options:{redirectTo:window.location.origin+window.location.pathname+(_t!=='default'?'?team='+_t:''),queryParams:{hd:'garena.com'}}
