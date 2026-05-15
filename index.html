@@ -1096,7 +1096,7 @@ function loginWithGoogle(){
   document.getElementById('google-btn-text').textContent='กำลัง redirect...';
   db.auth.signInWithOAuth({
     provider:'google',
-    options:{redirectTo:window.location.origin+window.location.pathname,queryParams:{hd:'garena.com'}}
+    options:{redirectTo:window.location.origin+window.location.pathname+(_t!=='default'?'?team='+_t:''),queryParams:{hd:'garena.com'}}
   }).then(function(res){if(res.error) showError(res.error.message);});
 }
 
