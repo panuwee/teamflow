@@ -1120,8 +1120,8 @@ async function bootApp(session){
   booting=true;
   try{
     const email=session.user.email.toLowerCase();
-    const SUPER_ADMIN='panuwee.w@garena.com';
-    if(email===SUPER_ADMIN){currentUser='Panu';isReadOnly=false;}
+    const SUPER_ADMINS={'panuwee.w@garena.com':'Panu','sasin.cha@garena.com':'Gear'};
+    if(SUPER_ADMINS[email]){currentUser=SUPER_ADMINS[email];isReadOnly=false;}
     else if(WHITELIST[email]){currentUser=WHITELIST[email];isReadOnly=false;}
     else{const n=email.split('@')[0];currentUser=n.charAt(0).toUpperCase()+n.slice(1);isReadOnly=true;}
     await loadAll();
