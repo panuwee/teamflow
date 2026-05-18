@@ -853,7 +853,7 @@ tr:hover td{background:var(--elevator);cursor:pointer}
     <h2 id="task-modal-title">New Task</h2>
     <div class="field"><label>Title *</label><input id="tf-title" placeholder="Task title"/></div>
     <div class="field"><label>Project</label><select id="tf-project"></select></div>
-    <div class="field"><label>Status</label><select id="tf-status"><option>To Do</option><option>In Progress</option><option>Review</option><option>Done</option><option>Cancelled</option></select></div>
+    <div class="field" id="tf-status-field"><label>Status</label><select id="tf-status"><option>To Do</option><option>In Progress</option><option>Review</option><option>Done</option><option>Cancelled</option></select></div>
     <div class="field"><label>Priority</label><select id="tf-priority"><option>High</option><option>Medium</option><option>Low</option></select></div>
     <div class="field"><label>Assignee</label><select id="tf-assignee"></select></div>
     <div class="field"><label>Due Date</label><input type="date" id="tf-due"/></div>
@@ -1188,6 +1188,27 @@ async function upsertTask(t){
   }
   setSyncing(false,'Saved');setTimeout(()=>setSyncing(false,'Synced'),2000);
 }
+
+function tfClientDateStamp(date=new Date()){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,'0');
+  const d=String(date.getDate()).padStart(2,'0');
+  return `${y}${m}${d}`;
+}
+async function generateTaskId(){
+  const stamp=tfClientDateStamp();
+  const prefix=`TASK-TF${stamp}-`;
+  const {data,error}=await db.from('tasks').select('id').like('id',`${prefix}%`);
+  if(error) throw error;
+  const max=(data||[]).reduce((acc,row)=>{
+    const id=String(row.id||'');
+    if(!id.startsWith(prefix)) return acc;
+    const seq=id.slice(prefix.length);
+    if(!/^\d+$/.test(seq)) return acc;
+    return Math.max(acc,Number(seq));
+  },0);
+  return prefix+String(max+1).padStart(2,'0');
+}
 async function deleteTaskDB(id){await db.from('tasks').delete().eq('id',id);}
 async function upsertProject(name){try{await db.from('projects').upsert({name},{onConflict:'name'});}catch(e){console.warn(e);}}
 async function deleteProjectDB(name){try{await db.from('projects').delete().eq('name',name);}catch(e){console.warn(e);}}
@@ -1426,6 +1447,7 @@ function openNew(){
   document.getElementById('task-modal-title').textContent='New Task';
   document.getElementById('tf-title').value='';
   document.getElementById('tf-project').innerHTML=projects.map(p=>`<option>${esc(p)}</option>`).join('');
+  document.getElementById('tf-status-field').style.display='none';
   document.getElementById('tf-status').value='To Do';document.getElementById('tf-priority').value='Medium';
   document.getElementById('tf-assignee').innerHTML=members.map(m=>`<option${m===currentUser?' selected':''}>${esc(m)}</option>`).join('');
   document.getElementById('tf-due').value='';document.getElementById('tf-desc').value='';
@@ -1438,6 +1460,7 @@ function openEdit(id){
   document.getElementById('task-modal-title').textContent='Edit Task';
   document.getElementById('tf-title').value=t.title;
   document.getElementById('tf-project').innerHTML=projects.map(p=>`<option${p===t.project?' selected':''}>${esc(p)}</option>`).join('');
+  document.getElementById('tf-status-field').style.display='';
   document.getElementById('tf-status').value=t.status;document.getElementById('tf-priority').value=t.priority;
   document.getElementById('tf-assignee').innerHTML=members.map(m=>`<option${m===t.assignee?' selected':''}>${esc(m)}</option>`).join('');
   document.getElementById('tf-due').value=t.due||'';document.getElementById('tf-desc').value=t.description||'';
@@ -1448,7 +1471,12 @@ async function submitTask(){
   if(isReadOnly) return;
   const title=document.getElementById('tf-title').value.trim();if(!title){alert('Please enter a task title.');return;}
   const prev=editingId?tasks.find(t=>String(t.id)===String(editingId)):null;
-  const td={id:editingId||Date.now().toString(),title,project:document.getElementById('tf-project').value,status:document.getElementById('tf-status').value,priority:document.getElementById('tf-priority').value,assignee:document.getElementById('tf-assignee').value,due:document.getElementById('tf-due').value||null,description:document.getElementById('tf-desc').value,comments:prev?.comments||[],created_by:prev?.created_by||currentUser,checklist:normalizeChecklist(editingChecklist)};
+  let taskId=editingId;
+  if(!taskId){
+    try{taskId=await generateTaskId();}
+    catch(e){console.error(e);alert('Cannot generate Task ID. Please try again.');return;}
+  }
+  const td={id:taskId,title,project:document.getElementById('tf-project').value,status:editingId?document.getElementById('tf-status').value:'To Do',priority:document.getElementById('tf-priority').value,assignee:document.getElementById('tf-assignee').value,due:document.getElementById('tf-due').value||null,description:document.getElementById('tf-desc').value,comments:prev?.comments||[],created_by:prev?.created_by||currentUser,checklist:normalizeChecklist(editingChecklist)};
   if(editingId){tasks=tasks.map(t=>String(t.id)===String(editingId)?td:t);}else{tasks.push(td);}
   if(td.project&&!projects.includes(td.project)) projects.push(td.project);
   closeModal('modal-task');render();await upsertTask(td);
