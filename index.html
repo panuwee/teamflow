@@ -1387,10 +1387,26 @@ function renderKanban(){
   }).join('');
 }
 
+function dueDistanceFromToday(due,today){
+  if(!due) return Number.MAX_SAFE_INTEGER;
+  const d=new Date(`${due}T00:00:00`);
+  const t=new Date(`${today}T00:00:00`);
+  if(Number.isNaN(d.getTime())||Number.isNaN(t.getTime())) return Number.MAX_SAFE_INTEGER;
+  return Math.abs(d.getTime()-t.getTime());
+}
+function compareListDue(a,b,today){
+  const ad=dueDistanceFromToday(a.due,today),bd=dueDistanceFromToday(b.due,today);
+  if(ad!==bd) return ad-bd;
+  if((a.due||'')!==(b.due||'')) return String(a.due||'9999-12-31').localeCompare(String(b.due||'9999-12-31'));
+  return String(a.title||'').localeCompare(String(b.title||''));
+}
 function renderList(){
   const today=todayKey();
-  document.getElementById('list-view').innerHTML=projects.map((proj,pi)=>{
-    const pt=filtered().filter(t=>t.project===proj);if(!pt.length) return '';
+  const visible=filtered().filter(t=>t.status!=='Done');
+  const groups=projects.map(proj=>({proj,tasks:visible.filter(t=>t.project===proj).sort((a,b)=>compareListDue(a,b,today))}))
+    .filter(g=>g.tasks.length)
+    .sort((a,b)=>compareListDue(a.tasks[0],b.tasks[0],today));
+  document.getElementById('list-view').innerHTML=groups.map(({proj,tasks:pt})=>{
     return `<div class="list-group"><div class="list-hdr">${esc(proj)} <span style="opacity:.75;font-size:11px;">${pt.length} tasks</span></div>
     <table><thead><tr><th>Task</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due</th><th>Checklist</th><th>Comments</th></tr></thead><tbody>
     ${pt.map(t=>{const s=SC[t.status]||SC['To Do'],p=PC[t.priority]||PC.Medium,ov=t.due&&t.due<today&&t.status!=='Done',cl=checklistProgress(t.checklist);
